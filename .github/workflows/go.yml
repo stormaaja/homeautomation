@@ -22,9 +22,9 @@ jobs:
         go-version: '1.21.6'
 
     - name: Build Data Store
-      working-directory: ./go-data-store
+      working-directory: ./data-store
       run: go build -v ./...
 
     - name: Test Data Store
-      working-directory: ./go-data-store
+      working-directory: ./data-store
       run: go test -v ./...
