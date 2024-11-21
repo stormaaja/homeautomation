@@ -8,7 +8,7 @@ import (
 )
 
 func handler(w http.ResponseWriter, r *http.Request) {
-	if !requestvalidators.ValidateToken(r.Header) {
+	if !requestvalidators.IsApiTokenValid(r.Header) {
 		http.Error(w, "Unauthorized", http.StatusUnauthorized)
 		return
 	}
