@@ -8,6 +8,7 @@ Data Store server for the home automation.
 
 ## Running
 
+    go get stormaaja/go-ha/security
     go run .
 
 ## Run tests
