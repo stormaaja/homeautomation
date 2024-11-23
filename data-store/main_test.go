@@ -8,7 +8,7 @@ import (
 )
 
 func TestHandler(t *testing.T) {
-	req, err := http.NewRequest("GET", "/", nil)
+	req, err := http.NewRequest("GET", "/healthcheck", nil)
 	if err != nil {
 		t.Fatal(err)
 	}
@@ -26,7 +26,7 @@ func TestHandler(t *testing.T) {
 }
 
 func TestHandlerWithValidToken(t *testing.T) {
-	req, err := http.NewRequest("GET", "/", nil)
+	req, err := http.NewRequest("GET", "/healthcheck", nil)
 	if err != nil {
 		t.Fatal(err)
 	}
@@ -43,10 +43,46 @@ func TestHandlerWithValidToken(t *testing.T) {
 		t.Errorf("handler returned wrong status code: got %v want %v",
 			status, http.StatusOK)
 	}
+}
 
-	expected := "!"
-	if rr.Body.String() != expected {
-		t.Errorf("handler returned unexpected body: got %v want %v",
-			rr.Body.String(), expected)
+func TestHandlerWithoutPath(t *testing.T) {
+	req, err := http.NewRequest("GET", "/", nil)
+	if err != nil {
+		t.Fatal(err)
+	}
+
+	os.Setenv("API_TOKEN", "valid-token")
+	req.Header.Set("Authorization", "Bearer valid-token")
+
+	rr := httptest.NewRecorder()
+	handler := http.HandlerFunc(handler)
+
+	handler.ServeHTTP(rr, req)
+
+	if status := rr.Code; status != http.StatusBadRequest {
+		t.Errorf("handler returned wrong status code: got %v want %v",
+			status, http.StatusOK)
+	}
+}
+func TestGetRootPath(t *testing.T) {
+	tests := []struct {
+		path         string
+		expectedRoot string
+		expectedSub  string
+	}{
+		{"/data/temperature", "data", "temperature"},
+		{"/data/", "data", ""},
+		{"/healthcheck", "healthcheck", ""},
+		{"/", "", ""},
+		{"", "", ""},
+	}
+
+	for _, tt := range tests {
+		t.Run(tt.path, func(t *testing.T) {
+			root, sub := GetRootPath(tt.path)
+			if root != tt.expectedRoot || sub != tt.expectedSub {
+				t.Errorf("GetRootPath(%s) = (%s, %s); want (%s, %s)", tt.path, root, sub, tt.expectedRoot, tt.expectedSub)
+			}
+		})
 	}
 }
