@@ -3,75 +3,52 @@ package genericroutes
 import (
 	"net/http"
 	"net/http/httptest"
-	"stormaaja/go-ha/data-store/store"
 	"testing"
+
+	"stormaaja/go-ha/data-store/store"
+
+	"github.com/gin-gonic/gin"
 )
 
 type MockMeasurementStore struct {
-	Data []float64
-}
-
-func (m *MockMeasurementStore) AppendItem(measurement string, location string, field string, value float64) {
-	m.Data = append(m.Data, value)
+	Flushed bool
 }
 
 func (m *MockMeasurementStore) Flush() {
-	m.Data = []float64{}
+	m.Flushed = true
 }
 
-func TestHandleGet(t *testing.T) {
-	storeRoute := StoreRoute{}
-	req, err := http.NewRequest("GET", "/measurements", nil)
-	if err != nil {
-		t.Fatal(err)
-	}
-	rr := httptest.NewRecorder()
-	handler := http.HandlerFunc(storeRoute.HandleGet)
-	handler.ServeHTTP(rr, req)
-
-	if status := rr.Code; status != http.StatusMethodNotAllowed {
-		t.Errorf("handler returned wrong status code: got %v want %v", status, http.StatusMethodNotAllowed)
-	}
+func (m *MockMeasurementStore) AppendItem(
+	measurement string,
+	location string,
+	field string,
+	value float64,
+) {
 }
 
-func TestHandlePostInvalidPath(t *testing.T) {
-	storeRoute := StoreRoute{}
-	req, err := http.NewRequest("POST", "/measurements/invalid", nil)
-	if err != nil {
-		t.Fatal(err)
-	}
-	rr := httptest.NewRecorder()
-	handler := http.HandlerFunc(storeRoute.HandlePost)
-	handler.ServeHTTP(rr, req)
+func TestCreateStoreRoutes(t *testing.T) {
+	gin.SetMode(gin.TestMode)
+	router := gin.Default()
 
-	if status := rr.Code; status != http.StatusBadRequest {
-		t.Errorf("handler returned wrong status code: got %v want %v", status, http.StatusBadRequest)
-	}
-}
+	mockStore1 := &MockMeasurementStore{}
+	mockStore2 := &MockMeasurementStore{}
+	measurementStores := []store.MeasurementStore{mockStore1, mockStore2}
 
-func TestHandlePostFlush(t *testing.T) {
-	mockStore := MockMeasurementStore{}
-	storeRoute := StoreRoute{MeasurementStores: []store.MeasurementStore{&mockStore}}
-	mockStore.AppendItem("test-measurement", "test-sensor", "test-field", 1.0)
+	CreateStoreRoutes(router, measurementStores)
 
-	if len(mockStore.Data) != 1 {
-		t.Errorf("Data not appended")
+	w := httptest.NewRecorder()
+	req, _ := http.NewRequest("POST", "/measurements/flush", nil)
+	router.ServeHTTP(w, req)
+
+	if w.Code != http.StatusOK {
+		t.Errorf("Expected status code 200, got %v", w.Code)
 	}
 
-	req, err := http.NewRequest("POST", "/measurements/flush", nil)
-	if err != nil {
-		t.Fatal(err)
-	}
-	rr := httptest.NewRecorder()
-	handler := http.HandlerFunc(storeRoute.HandlePost)
-	handler.ServeHTTP(rr, req)
-
-	if status := rr.Code; status != http.StatusOK {
-		t.Errorf("handler returned wrong status code: got %v want %v (%v)", status, http.StatusOK, rr.Body.String())
+	if !mockStore1.Flushed {
+		t.Errorf("Expected store 1 to be flushed")
 	}
 
-	if len(mockStore.Data) != 0 {
-		t.Errorf("Data not flushed")
+	if !mockStore2.Flushed {
+		t.Errorf("Expected store 2 to be flushed")
 	}
-
 }
