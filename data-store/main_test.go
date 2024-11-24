@@ -1,9 +1,13 @@
 package main
 
 import (
+	"fmt"
 	"net/http"
 	"net/http/httptest"
 	"os"
+	"stormaaja/go-ha/data-store/dataroutes"
+	"stormaaja/go-ha/data-store/genericroutes"
+	"stormaaja/go-ha/data-store/store"
 	"testing"
 )
 
@@ -15,7 +19,13 @@ func TestHandler(t *testing.T) {
 
 	os.Setenv("API_TOKEN", "valid-token")
 	rr := httptest.NewRecorder()
-	handler := http.HandlerFunc(handler)
+	handler := http.HandlerFunc(CreateHandlers(
+		dataroutes.TemperatureRoute{
+			Store:             &store.MemoryStore{},
+			MeasurementStores: []store.MeasurementStore{},
+		},
+		genericroutes.HealthcheckRoute{},
+	))
 
 	handler.ServeHTTP(rr, req)
 
@@ -35,7 +45,13 @@ func TestHandlerWithValidToken(t *testing.T) {
 	req.Header.Set("Authorization", "Bearer valid-token")
 
 	rr := httptest.NewRecorder()
-	handler := http.HandlerFunc(handler)
+	handler := http.HandlerFunc(CreateHandlers(
+		dataroutes.TemperatureRoute{
+			Store:             &store.MemoryStore{},
+			MeasurementStores: []store.MeasurementStore{},
+		},
+		genericroutes.HealthcheckRoute{},
+	))
 
 	handler.ServeHTTP(rr, req)
 
@@ -55,7 +71,13 @@ func TestHandlerWithoutPath(t *testing.T) {
 	req.Header.Set("Authorization", "Bearer valid-token")
 
 	rr := httptest.NewRecorder()
-	handler := http.HandlerFunc(handler)
+	handler := http.HandlerFunc(CreateHandlers(
+		dataroutes.TemperatureRoute{
+			Store:             &store.MemoryStore{},
+			MeasurementStores: []store.MeasurementStore{},
+		},
+		genericroutes.HealthcheckRoute{},
+	))
 
 	handler.ServeHTTP(rr, req)
 
@@ -77,8 +99,8 @@ func TestGetRootPath(t *testing.T) {
 		{"", "", ""},
 	}
 
-	for _, tt := range tests {
-		t.Run(tt.path, func(t *testing.T) {
+	for i, tt := range tests {
+		t.Run(fmt.Sprintf("test-case %d", i), func(t *testing.T) {
 			root, sub := GetRootPath(tt.path)
 			if root != tt.expectedRoot || sub != tt.expectedSub {
 				t.Errorf("GetRootPath(%s) = (%s, %s); want (%s, %s)", tt.path, root, sub, tt.expectedRoot, tt.expectedSub)

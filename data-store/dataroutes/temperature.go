@@ -2,13 +2,15 @@ package dataroutes
 
 import (
 	"fmt"
+	"log"
 	"net/http"
 	"stormaaja/go-ha/data-store/store"
 	"strings"
 )
 
 type TemperatureRoute struct {
-	Store store.DataStore
+	Store             store.DataStore
+	MeasurementStores []store.MeasurementStore
 }
 
 func ParseId(path string) string {
@@ -38,7 +40,6 @@ func (t TemperatureRoute) HandleGet(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	// Get the temperature from the store
 	temperature, success := t.Store.GetFloat(sensorId)
 	if !success {
 		http.Error(w, "Sensor not found", http.StatusBadRequest)
@@ -69,5 +70,9 @@ func (t TemperatureRoute) HandlePost(w http.ResponseWriter, r *http.Request) {
 	}
 
 	t.Store.SetFloat(sensorId, temperature)
+	for _, store := range t.MeasurementStores {
+		log.Printf("Storing temperature %f for sensor %s", temperature, sensorId)
+		store.AppendItem("temperature", sensorId, "temperature", temperature)
+	}
 	w.WriteHeader(http.StatusCreated)
 }

@@ -10,10 +10,9 @@ import (
 	"stormaaja/go-ha/security/configvalidators"
 	"stormaaja/go-ha/security/requestvalidators"
 	"strings"
-)
 
-var temperatureRoute = dataroutes.TemperatureRoute{Store: &store.MemoryStore{Data: make(map[string]interface{})}}
-var healthcheckRoute = genericroutes.HealthcheckRoute{}
+	"github.com/joho/godotenv"
+)
 
 func GetRootPath(path string) (string, string) {
 	splittedPath := strings.Split(path, "/")
@@ -36,37 +35,61 @@ func HandleRoute(route routes.RouteHandler, w http.ResponseWriter, r *http.Reque
 	}
 }
 
-func handler(w http.ResponseWriter, r *http.Request) {
-	if !requestvalidators.IsApiTokenValid(r.Header) {
-		http.Error(w, "Unauthorized", http.StatusUnauthorized)
-		return
-	}
+func CreateHandlers(
+	temperatureRoute dataroutes.TemperatureRoute,
+	healthcheckRoute genericroutes.HealthcheckRoute,
+) func(w http.ResponseWriter, r *http.Request) {
+	return func(w http.ResponseWriter, r *http.Request) {
+		if !requestvalidators.IsApiTokenValid(r.Header) {
+			http.Error(w, "Unauthorized", http.StatusUnauthorized)
+			return
+		}
 
-	log.Printf("%s %s", r.Method, r.URL.Path) // TODO: Clean ids from logs
+		log.Printf("%s %s", r.Method, r.URL.Path) // TODO: Clean ids from logs
 
-	rootPath, subPath := GetRootPath(r.URL.Path)
+		rootPath, subPath := GetRootPath(r.URL.Path)
 
-	switch rootPath {
-	case "data":
-		if subPath == "temperature" {
-			HandleRoute(temperatureRoute, w, r)
-		} else {
+		switch rootPath {
+		case "data":
+			if subPath == "temperature" {
+				HandleRoute(temperatureRoute, w, r)
+			} else {
+				http.Error(w, "Invalid path", http.StatusBadRequest)
+			}
+		case "measurements":
+			HandleRoute(genericroutes.StoreRoute{
+				MeasurementStores: temperatureRoute.MeasurementStores,
+			},
+				w, r,
+			)
+		case "healthcheck":
+			HandleRoute(healthcheckRoute, w, r)
+		default:
 			http.Error(w, "Invalid path", http.StatusBadRequest)
 		}
-	case "healthcheck":
-		HandleRoute(healthcheckRoute, w, r)
-	default:
-		http.Error(w, "Invalid path", http.StatusBadRequest)
 	}
 }
 
 func main() {
 	log.Println("Starting server...")
+	if err := godotenv.Load(); err != nil {
+		log.Fatalf("error loading environment variables: %v", err)
+		return
+	}
+
 	if err := configvalidators.IsConfigEnvironmentVariablesValid(); err != nil {
 		log.Fatalf("error: %v", err)
 		return
 	}
-	http.HandleFunc("/", handler)
+	var influxDbClient = store.NewInfluxDBClient()
+
+	var temperatureRoute = dataroutes.TemperatureRoute{
+		Store:             &store.MemoryStore{Data: make(map[string]interface{})},
+		MeasurementStores: []store.MeasurementStore{&influxDbClient},
+	}
+	var healthcheckRoute = genericroutes.HealthcheckRoute{}
+
+	http.HandleFunc("/", CreateHandlers(temperatureRoute, healthcheckRoute))
 	log.Println("Server running on port 8080")
 	log.Fatal(http.ListenAndServe(":8080", nil))
 }
