@@ -2,72 +2,45 @@ package main
 
 import (
 	"log"
-	"net/http"
+	"os"
 	"stormaaja/go-ha/data-store/dataroutes"
 	"stormaaja/go-ha/data-store/genericroutes"
-	"stormaaja/go-ha/data-store/routes"
+	"stormaaja/go-ha/data-store/middleware"
 	"stormaaja/go-ha/data-store/store"
 	"stormaaja/go-ha/security/configvalidators"
-	"stormaaja/go-ha/security/requestvalidators"
 	"strings"
 
+	"github.com/gin-gonic/gin"
 	"github.com/joho/godotenv"
 )
 
-func GetRootPath(path string) (string, string) {
-	splittedPath := strings.Split(path, "/")
-	if len(splittedPath) > 2 {
-		return splittedPath[1], splittedPath[2]
-	} else if len(splittedPath) > 1 {
-		return splittedPath[1], ""
-	}
-	return "", ""
-}
-
-func HandleRoute(route routes.RouteHandler, w http.ResponseWriter, r *http.Request) {
-	switch r.Method {
-	case "GET":
-		route.HandleGet(w, r)
-	case "POST":
-		route.HandlePost(w, r)
+func CreateRoutes(
+	memoryStore store.DataStore,
+	measurementStores []store.MeasurementStore,
+) *gin.Engine {
+	allowedProxies := os.Getenv("ALLOWED_PROXIES")
+	r := gin.Default()
+	switch os.Getenv("ENVIRONMENT") {
+	case "production":
+		gin.SetMode(gin.ReleaseMode)
+	case "test":
+		gin.SetMode(gin.TestMode)
 	default:
-		http.Error(w, "Invalid method", http.StatusMethodNotAllowed)
+		gin.SetMode(gin.DebugMode)
 	}
-}
 
-func CreateHandlers(
-	temperatureRoute dataroutes.TemperatureRoute,
-	healthcheckRoute genericroutes.HealthcheckRoute,
-) func(w http.ResponseWriter, r *http.Request) {
-	return func(w http.ResponseWriter, r *http.Request) {
-		if !requestvalidators.IsApiTokenValid(r.Header) {
-			http.Error(w, "Unauthorized", http.StatusUnauthorized)
-			return
-		}
-
-		log.Printf("%s %s", r.Method, r.URL.Path) // TODO: Clean ids from logs
-
-		rootPath, subPath := GetRootPath(r.URL.Path)
-
-		switch rootPath {
-		case "data":
-			if subPath == "temperature" {
-				HandleRoute(temperatureRoute, w, r)
-			} else {
-				http.Error(w, "Invalid path", http.StatusBadRequest)
-			}
-		case "measurements":
-			HandleRoute(genericroutes.StoreRoute{
-				MeasurementStores: temperatureRoute.MeasurementStores,
-			},
-				w, r,
-			)
-		case "healthcheck":
-			HandleRoute(healthcheckRoute, w, r)
-		default:
-			http.Error(w, "Invalid path", http.StatusBadRequest)
-		}
-	}
+	r.SetTrustedProxies(
+		strings.Split(allowedProxies, ","),
+	)
+	r.Use(middleware.TokenCheck())
+	genericroutes.CreateHealthCheckRoutes(r)
+	dataroutes.CreateTemperatureRoutes(
+		r,
+		memoryStore,
+		measurementStores,
+	)
+	genericroutes.CreateStoreRoutes(r, measurementStores)
+	return r
 }
 
 func main() {
@@ -82,14 +55,13 @@ func main() {
 		return
 	}
 	var influxDbClient = store.NewInfluxDBClient()
-
-	var temperatureRoute = dataroutes.TemperatureRoute{
-		Store:             &store.MemoryStore{Data: make(map[string]interface{})},
-		MeasurementStores: []store.MeasurementStore{&influxDbClient},
+	var memoryStore = store.MemoryStore{
+		Data: make(map[string]interface{}),
 	}
-	var healthcheckRoute = genericroutes.HealthcheckRoute{}
+	r := CreateRoutes(
+		&memoryStore,
+		[]store.MeasurementStore{&influxDbClient},
+	)
 
-	http.HandleFunc("/", CreateHandlers(temperatureRoute, healthcheckRoute))
-	log.Println("Server running on port 8080")
-	log.Fatal(http.ListenAndServe(":8080", nil))
+	r.Run(":8080")
 }

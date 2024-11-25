@@ -4,41 +4,18 @@ import (
 	"net/http"
 	"net/http/httptest"
 	"testing"
+
+	"github.com/gin-gonic/gin"
 )
 
-func TestHealthcheckRoute_HandleGet(t *testing.T) {
-	req, err := http.NewRequest("GET", "/healthcheck", nil)
-	if err != nil {
-		t.Fatal(err)
-	}
+func TestCreateHealthCheckRoutes(t *testing.T) {
+	router := gin.Default()
+	CreateHealthCheckRoutes(router)
 
-	rr := httptest.NewRecorder()
-	handler := http.HandlerFunc(HealthcheckRoute{}.HandleGet)
-
-	handler.ServeHTTP(rr, req)
-
-	if status := rr.Code; status != http.StatusOK {
-		t.Errorf("handler returned wrong status code: got %v want %v", status, http.StatusOK)
-	}
-}
-
-func TestHealthcheckRoute_HandlePost(t *testing.T) {
-	req, err := http.NewRequest("POST", "/healthcheck", nil)
-	if err != nil {
-		t.Fatal(err)
-	}
-
-	rr := httptest.NewRecorder()
-	handler := http.HandlerFunc(HealthcheckRoute{}.HandlePost)
-
-	handler.ServeHTTP(rr, req)
-
-	if status := rr.Code; status != http.StatusMethodNotAllowed {
-		t.Errorf("handler returned wrong status code: got %v want %v", status, http.StatusMethodNotAllowed)
-	}
-
-	expected := "Method not allowed\n"
-	if rr.Body.String() != expected {
-		t.Errorf("handler returned unexpected body: got %v want %v", rr.Body.String(), expected)
+	w := httptest.NewRecorder()
+	req, _ := http.NewRequest("GET", "/healthcheck", nil)
+	router.ServeHTTP(w, req)
+	if w.Code != 200 {
+		t.Errorf("Expected status code 200, got %v", w.Code)
 	}
 }

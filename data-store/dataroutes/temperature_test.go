@@ -1,113 +1,113 @@
 package dataroutes
 
 import (
+	"bytes"
 	"net/http"
 	"net/http/httptest"
 	"stormaaja/go-ha/data-store/store"
-	"strings"
 	"testing"
+
+	"github.com/gin-gonic/gin"
 )
 
-func TestParseId(t *testing.T) {
-	tests := []struct {
-		path     string
-		expected string
-	}{
-		{"/data/temperature/123/temperature", "123"},
-		{"/data/temperature/", ""},
-		{"/data/temperature/123/extra", "123"},
-		{"/", ""},
+type MockMeasurementStore struct {
+	Items map[string]float64
+}
+
+func (m *MockMeasurementStore) AppendItem(
+	measurement string,
+	location string,
+	field string,
+	value float64,
+) {
+	m.Items[location] = value
+}
+
+func (m *MockMeasurementStore) Flush() {
+	m.Items = make(map[string]float64)
+}
+
+func TestGetTemperature(t *testing.T) {
+	gin.SetMode(gin.TestMode)
+	router := gin.Default()
+
+	mockStore := store.MemoryStore{Data: make(map[string]interface{})}
+	mockStore.SetFloat("sensor1", 25.5)
+
+	CreateTemperatureRoutes(router, &mockStore, nil)
+
+	req, _ := http.NewRequest(http.MethodGet, "/data/temperature/sensor1/temperature", nil)
+	resp := httptest.NewRecorder()
+	router.ServeHTTP(resp, req)
+
+	if http.StatusOK != resp.Code {
+		t.Errorf("Expected status code 200, got %v", resp.Code)
 	}
 
-	for _, test := range tests {
-		result := ParseId(test.path)
-		if result != test.expected {
-			t.Errorf("ParseId(%s) = %s; expected %s", test.path, result, test.expected)
-		}
+	if resp.Body.String() != "25.500000" {
+		t.Errorf("Expected 25.500000, got %v", resp.Body.String())
 	}
 }
 
-func TestIsValidValueType(t *testing.T) {
-	tests := []struct {
-		path     string
-		expected bool
-	}{
-		{"/data/temperature/123/temperature", true},
-		{"/data/temperature/123/humidity", false},
-		{"/data/temperature/123/", false},
-		{"/data/temperature/123/temperature/extra", false},
-		{"/data/temperature/123/temperature", true},
-	}
+func TestGetTemperatureNotFound(t *testing.T) {
+	gin.SetMode(gin.TestMode)
+	router := gin.Default()
 
-	for _, test := range tests {
-		result := IsValidValueType(test.path)
-		if result != test.expected {
-			t.Errorf("IsValidValueType(%s) = %v; expected %v", test.path, result, test.expected)
-		}
+	mockStore := store.MemoryStore{Data: make(map[string]interface{})}
+
+	CreateTemperatureRoutes(router, &mockStore, nil)
+
+	req, _ := http.NewRequest(http.MethodGet, "/data/temperature/sensor1/temperature", nil)
+	resp := httptest.NewRecorder()
+	router.ServeHTTP(resp, req)
+
+	if http.StatusBadRequest != resp.Code {
+		t.Errorf("Expected status code 400, got %v", resp.Code)
 	}
 }
 
-func TestHandleGet(t *testing.T) {
-	dataStore := store.MemoryStore{Data: make(map[string]interface{})}
-	dataStore.SetFloat("123", 25.5)
-	route := TemperatureRoute{Store: &dataStore}
+func TestPostTemperature(t *testing.T) {
+	gin.SetMode(gin.TestMode)
+	router := gin.Default()
 
-	req, err := http.NewRequest("GET", "/data/temperature/123/temperature", nil)
-	if err != nil {
-		t.Fatal(err)
+	mockStore := store.MemoryStore{Data: make(map[string]interface{})}
+	mockMeasurementStore := MockMeasurementStore{Items: make(map[string]float64)}
+	measurementStores := []store.MeasurementStore{&mockMeasurementStore}
+
+	CreateTemperatureRoutes(router, &mockStore, measurementStores)
+
+	body := bytes.NewBufferString("30.5")
+	req, _ := http.NewRequest(http.MethodPost, "/data/temperature/sensor1/temperature", body)
+	resp := httptest.NewRecorder()
+	router.ServeHTTP(resp, req)
+
+	if http.StatusCreated != resp.Code {
+		t.Errorf("Expected status code 201, got %v", resp.Code)
 	}
 
-	rr := httptest.NewRecorder()
-	handler := http.HandlerFunc(route.HandleGet)
-	handler.ServeHTTP(rr, req)
-
-	if status := rr.Code; status != http.StatusOK {
-		t.Errorf("handler returned wrong status code: got %v want %v", status, http.StatusOK)
+	if mockStore.Data["sensor1"] != 30.5 {
+		t.Errorf("Expected 30.5, got %v", mockStore.Data["sensor1"])
 	}
 
-	expected := "25.500000"
-	if rr.Body.String() != expected {
-		t.Errorf("handler returned unexpected body: got %v want %v", rr.Body.String(), expected)
-	}
-}
-
-func TestHandleGetNonExisting(t *testing.T) {
-	dataStore := store.MemoryStore{Data: make(map[string]interface{})}
-	route := TemperatureRoute{Store: &dataStore}
-
-	req, err := http.NewRequest("GET", "/data/temperature/123/temperature", nil)
-	if err != nil {
-		t.Fatal(err)
-	}
-
-	rr := httptest.NewRecorder()
-	handler := http.HandlerFunc(route.HandleGet)
-	handler.ServeHTTP(rr, req)
-
-	if status := rr.Code; status != http.StatusBadRequest {
-		t.Errorf("handler returned wrong status code: got %v want %v", status, http.StatusBadRequest)
+	if mockMeasurementStore.Items["sensor1"] != 30.5 {
+		t.Errorf("Expected 30.5, got %v", mockMeasurementStore.Items["sensor1"])
 	}
 }
 
-func TestHandlePost(t *testing.T) {
-	dataStore := store.MemoryStore{Data: make(map[string]interface{})}
-	route := TemperatureRoute{Store: &dataStore}
+func TestPostTemperatureInvalidBody(t *testing.T) {
+	gin.SetMode(gin.TestMode)
+	router := gin.Default()
 
-	body := strings.NewReader("30.5")
-	req, err := http.NewRequest("POST", "/date/temperature/123/temperature", body)
-	if err != nil {
-		t.Fatal(err)
-	}
+	mockStore := store.MemoryStore{Data: make(map[string]interface{})}
 
-	rr := httptest.NewRecorder()
-	handler := http.HandlerFunc(route.HandlePost)
-	handler.ServeHTTP(rr, req)
+	CreateTemperatureRoutes(router, &mockStore, nil)
 
-	if status := rr.Code; status != http.StatusCreated {
-		t.Errorf("handler returned wrong status code: got %v want %v", status, http.StatusCreated)
-	}
+	body := bytes.NewBufferString("invalid")
+	req, _ := http.NewRequest(http.MethodPost, "/data/temperature/sensor1/temperature", body)
+	resp := httptest.NewRecorder()
+	router.ServeHTTP(resp, req)
 
-	if value, _ := dataStore.GetFloat("123"); value != 30.5 {
-		t.Errorf("handler did not set the correct value: got %v want %v", value, 30.5)
+	if http.StatusBadRequest != resp.Code {
+		t.Errorf("Expected status code 400, got %v", resp.Code)
 	}
 }
