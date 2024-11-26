@@ -2,10 +2,10 @@ package dataroutes
 
 import (
 	"fmt"
-	"io"
 	"log"
 	"net/http"
 	"stormaaja/go-ha/data-store/store"
+	"stormaaja/go-ha/data-store/tools"
 
 	"github.com/gin-gonic/gin"
 )
@@ -27,17 +27,10 @@ func CreateTemperatureRoutes(
 
 	g.POST("/data/temperature/:id/temperature", func(c *gin.Context) {
 		sensorId := c.Param("id")
-		var temperature float64
-		var body, error = io.ReadAll(c.Request.Body)
-		if error != nil {
-			c.AbortWithError(http.StatusBadRequest, fmt.Errorf("invalid body"))
-			return
-		}
-		bodyStr := string(body)
-		_, error = fmt.Sscanf(bodyStr, "%f", &temperature)
+		temperature, error := tools.ReadBodyFloat(&c.Request.Body)
 
 		if error != nil {
-			c.AbortWithError(http.StatusBadRequest, fmt.Errorf("invalid temperature format"))
+			c.AbortWithError(http.StatusBadRequest, fmt.Errorf("invalid body"))
 			return
 		}
 
