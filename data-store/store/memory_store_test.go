@@ -4,43 +4,42 @@ import (
 	"testing"
 )
 
-func TestMemoryStore(t *testing.T) {
-	store := &MemoryStore{Data: make(map[string]interface{})}
-
-	// Test SetString and GetString
-	store.SetString("key1", "value1")
-	if val, _ := store.GetString("key1"); val != "value1" {
-		t.Errorf("expected 'value1', got '%s'", val)
+func TestMemoryStore_GetMeasurement(t *testing.T) {
+	store := MemoryStore{
+		Data: map[string]map[string]interface{}{
+			"key1": {
+				"temperature": Measurement{Value: 23.5},
+			},
+		},
 	}
 
-	// Test SetInt and GetInt
-	store.SetInt("key2", 42)
-	if val, _ := store.GetInt("key2"); val != 42 {
-		t.Errorf("expected 42, got %d", val)
+	measurement, ok := store.GetMeasurement("temperature", "key1")
+	if !ok {
+		t.Errorf("expected measurement to be found")
+	}
+	if measurement.Value != 23.5 {
+		t.Errorf("expected measurement value to be 23.5, got %v", measurement.Value)
 	}
 
-	// Test SetFloat and GetFloat
-	store.SetFloat("key3", 3.14)
-	if val, _ := store.GetFloat("key3"); val != 3.14 {
-		t.Errorf("expected 3.14, got %f", val)
+	_, ok = store.GetMeasurement("humidity", "key1")
+	if ok {
+		t.Errorf("expected measurement to not be found")
 	}
 }
 
-func TestMemoryStoreGetNonExistingKey(t *testing.T) {
-	store := &MemoryStore{Data: make(map[string]interface{})}
-
-	// Test GetString
-	if val, ok := store.GetString("key"); ok {
-		t.Errorf("expected ok to be false, got true with value '%s'", val)
+func TestMemoryStore_SetMeasurement(t *testing.T) {
+	store := MemoryStore{
+		Data: make(map[string]map[string]interface{}),
 	}
 
-	// Test GetInt
-	if val, ok := store.GetInt("key"); ok {
-		t.Errorf("expected ok to be false, got true with value %d", val)
-	}
+	measurement := Measurement{Value: 23.5}
+	store.SetMeasurement("temperature", "key1", measurement)
 
-	// Test GetFloat
-	if val, ok := store.GetFloat("key"); ok {
-		t.Errorf("expected ok to be false, got true with value %f", val)
+	storedMeasurement, ok := store.GetMeasurement("temperature", "key1")
+	if !ok {
+		t.Errorf("expected measurement to be found")
+	}
+	if storedMeasurement.Value != 23.5 {
+		t.Errorf("expected measurement value to be 23.5, got %v", storedMeasurement.Value)
 	}
 }

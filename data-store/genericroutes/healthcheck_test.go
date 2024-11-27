@@ -9,6 +9,7 @@ import (
 )
 
 func TestCreateHealthCheckRoutes(t *testing.T) {
+	gin.SetMode(gin.TestMode)
 	router := gin.Default()
 	CreateHealthCheckRoutes(router)
 
