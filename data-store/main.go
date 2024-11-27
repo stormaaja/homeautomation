@@ -34,7 +34,7 @@ func CreateRoutes(
 	)
 	r.Use(middleware.TokenCheck())
 	genericroutes.CreateHealthCheckRoutes(r)
-	dataroutes.CreateTemperatureRoutes(
+	dataroutes.CreateGenericDataRoutes(
 		r,
 		memoryStore,
 		measurementStores,
@@ -56,7 +56,7 @@ func main() {
 	}
 	var influxDbClient = store.NewInfluxDBClient()
 	var memoryStore = store.MemoryStore{
-		Data: make(map[string]interface{}),
+		Data: make(map[string]map[string]interface{}),
 	}
 	r := CreateRoutes(
 		&memoryStore,

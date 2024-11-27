@@ -1,10 +1,21 @@
 package store
 
+type Measurement struct {
+	DeviceId        string
+	MeasurementType string
+	Field           string
+	Value           interface{}
+}
+
 type DataStore interface {
-	GetString(key string) (string, bool)
-	SetString(key string, value string)
-	GetInt(key string) (int, bool)
-	SetInt(key string, value int)
-	GetFloat(key string) (float64, bool)
-	SetFloat(key string, value float64)
+	GetMeasurement(
+		measurementType string,
+		key string,
+	) (Measurement, bool)
+
+	SetMeasurement(
+		measurementType string,
+		key string,
+		measurement Measurement,
+	)
 }
