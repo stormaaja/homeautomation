@@ -1,41 +1,24 @@
 package store
 
 type MemoryStore struct {
-	Data map[string]interface{}
+	Data map[string]map[string]interface{}
 }
 
-func (m *MemoryStore) GetString(key string) (string, bool) {
-	if value, ok := m.Data[key]; !ok {
-		return "", false
-	} else {
-		return value.(string), true
+func (m MemoryStore) GetMeasurement(
+	measurementType string,
+	key string,
+) (Measurement, bool) {
+	measurement, ok := m.Data[key][measurementType].(Measurement)
+	return measurement, ok
+}
+
+func (m MemoryStore) SetMeasurement(
+	measurementType string,
+	key string,
+	measurement Measurement,
+) {
+	if m.Data[key] == nil {
+		m.Data[key] = make(map[string]interface{})
 	}
-}
-
-func (m *MemoryStore) SetString(key string, value string) {
-	m.Data[key] = value
-}
-
-func (m *MemoryStore) GetInt(key string) (int, bool) {
-	if value, ok := m.Data[key]; !ok {
-		return 0, false
-	} else {
-		return value.(int), true
-	}
-}
-
-func (m *MemoryStore) SetInt(key string, value int) {
-	m.Data[key] = value
-}
-
-func (m *MemoryStore) GetFloat(key string) (float64, bool) {
-	if value, ok := m.Data[key]; !ok {
-		return 0, false
-	} else {
-		return value.(float64), true
-	}
-}
-
-func (m *MemoryStore) SetFloat(key string, value float64) {
-	m.Data[key] = value
+	m.Data[key][measurementType] = measurement
 }
