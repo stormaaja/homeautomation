@@ -24,14 +24,14 @@ func TestCreateGenericDataRoutes(t *testing.T) {
 	CreateGenericDataRoutes(router, mockDataStore, measurementStores)
 
 	t.Run("GET /data/:measurement/:id/:field - success", func(t *testing.T) {
-		mockDataStore.SetMeasurement("testtype", "device1", store.Measurement{
+		mockDataStore.SetMeasurement("electricity_consumption", "device1", store.Measurement{
 			DeviceId:        "device1",
-			MeasurementType: "testtype",
-			Field:           "temperature",
+			MeasurementType: "electricity_consumption",
+			Field:           "energy",
 			Value:           25.5,
 		})
 
-		req, _ := http.NewRequest(http.MethodGet, "/data/testtype/device1/temperature", nil)
+		req, _ := http.NewRequest(http.MethodGet, "/data/electricity_consumption/device1/energy", nil)
 		resp := httptest.NewRecorder()
 		router.ServeHTTP(resp, req)
 
@@ -49,13 +49,13 @@ func TestCreateGenericDataRoutes(t *testing.T) {
 
 	t.Run("POST /data/:measurement/:id/:field - success", func(t *testing.T) {
 		body := bytes.NewBufferString("30.5")
-		req, _ := http.NewRequest(http.MethodPost, "/data/testtype/device2/testfield", body)
+		req, _ := http.NewRequest(http.MethodPost, "/data/temperature/device2/temperature", body)
 		resp := httptest.NewRecorder()
 		router.ServeHTTP(resp, req)
 
 		assert.Equal(t, http.StatusCreated, resp.Code)
 		assert.Equal(t, 30.5, mockMeasurementStore.Items["device2"])
-		assert.Equal(t, 30.5, mockDataStore.Data["device2"]["testtype"].(store.Measurement).Value)
+		assert.Equal(t, 30.5, mockDataStore.Data["device2"]["temperature"].(store.Measurement).Value)
 	})
 
 	t.Run("POST /data/:measurement/:id/:field - invalid body", func(t *testing.T) {
