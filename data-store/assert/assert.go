@@ -7,6 +7,7 @@ func True(
 	condition bool,
 ) {
 	if !condition {
+		t.Helper()
 		t.Errorf(
 			"Assertion failed. Expected true, got false. Message",
 		)
@@ -18,6 +19,7 @@ func Equal(
 	expected interface{},
 	actual interface{},
 ) {
+	t.Helper()
 	if expected != actual {
 		t.Errorf(
 			"Assertion failed. Expected %v, got %v",
