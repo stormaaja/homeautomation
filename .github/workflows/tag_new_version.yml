@@ -1,0 +1,38 @@
+# This workflow will add and push tags to the repository when a version bump pull request is merged to main.
+# Pull request branch name is misc/version-<version_number>
+
+name: Tag New Version
+
+on:
+  pull_request:
+    types: [closed]
+    branches:
+      - main
+    branches-ignore:
+      - '*'
+    paths:
+      - 'misc/version-*'
+
+
+jobs:
+  data_store_version_bump:
+    runs-on: ubuntu-latest
+    permissions: 
+      contents: write
+      pull-requests: write
+    steps:
+    - uses: actions/checkout@v4
+      with:
+        fetch-depth: 0
+
+    - name: Push Data Store Version
+      id: push_step
+      working-directory: ./data-store
+      run: |
+        git config --local user.email "github-actions[bot]@users.noreply.github.com"
+        git config --local user.name "github-actions[bot]"
+        version_str=$(perl -nle 'print $1 if /Version = "([^"]+)"/' "version.go")
+        git tag -a -m "[automatic] Version ${version_str}" "v${version_str}"
+        pr_branch="misc/version-${version_str}"
+        git push origin "$pr_branch" --tags
+      
