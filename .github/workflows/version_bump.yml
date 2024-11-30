@@ -44,6 +44,6 @@ jobs:
       run: |
        pr_branch=${{ steps.push_step.outputs.pr_branch }}
        version_str=${{ steps.push_step.outputs.version_str }}
-       gh pr create -B "$pr_branch" -H main --title "Update version $version_str" --body 'Created by Github action'
+       gh pr create -B main -H "$pr_branch" --title "Update version $version_str" --body 'Created by Github action'
       env:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
