@@ -10,7 +10,7 @@ on:
 
 jobs:
   data_store_version_bump:
-    if: github.ref != 'refs/heads/misc/version-*' && github.event_name != 'pull_request'
+    if: github.event.pull_request.merged == true && !startsWith(github.event.pull_request.head.ref, 'misc/version-')
     runs-on: ubuntu-latest
     permissions: 
       contents: write
