@@ -10,6 +10,7 @@ on:
 
 jobs:
   data_store_version_bump:
+    if: github.ref != 'refs/heads/misc/version-*' && github.event_name != 'pull_request'
     runs-on: ubuntu-latest
     permissions: 
       contents: write
@@ -32,7 +33,7 @@ jobs:
         version_str=$(perl -nle 'print $1 if /Version = "([^"]+)"/' "version.go")
         git add version.go
         git checkout -b "misc/version-${version_str}"
-        git commit -m "[automatic] Version ${version_str}"
+        git commit -m "[automatic] Data-Store Version ${version_str}"
         pr_branch="misc/version-${version_str}"
         git push origin "$pr_branch"
         echo "pr_branch=$pr_branch" >> $GITHUB_OUTPUT

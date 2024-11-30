@@ -13,7 +13,8 @@ on:
 
 
 jobs:
-  data_store_version_bump:
+  version_tag:
+    if: github.ref == 'refs/heads/misc/version-*' && github.event_name == 'pull_request'
     runs-on: ubuntu-latest
     permissions: 
       contents: write
