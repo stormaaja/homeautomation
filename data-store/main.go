@@ -45,6 +45,7 @@ func CreateRoutes(
 
 func main() {
 	log.Println("Starting server...")
+	log.Println("Version: ", Version)
 	if err := godotenv.Load(); err != nil {
 		log.Fatalf("error loading environment variables: %v", err)
 		return
