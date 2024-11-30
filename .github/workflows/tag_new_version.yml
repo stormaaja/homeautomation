@@ -6,8 +6,6 @@ name: Tag New Version
 on:
   pull_request:
     types: [closed]
-    branches:
-      - main
     branches-ignore:
       - '*'
     paths:
