@@ -1,0 +1,49 @@
+# This workflow will increment the version number of a project on merge of a pull request to main
+
+name: Version Bump
+
+on:
+  pull_request:
+    types: [closed]
+    branches:
+      - main
+
+jobs:
+  data_store_version_bump:
+    runs-on: ubuntu-latest
+    permissions: 
+      contents: write
+      pull-requests: write
+    steps:
+    - uses: actions/checkout@v4
+      with:
+        fetch-depth: 0
+
+    - name: Bump Data Store Version
+      working-directory: ./data-store
+      run: scripts/version_bump.bash
+    
+    - name: Push Data Store Version
+      id: push_step
+      working-directory: ./data-store
+      run: |
+        git config --local user.email "github-actions[bot]@users.noreply.github.com"
+        git config --local user.name "github-actions[bot]"
+        version_str=$(perl -nle 'print $1 if /Version = "([^"]+)"/' "version.go")
+        git add version.go
+        git checkout -b "misc/version-${version_str}"
+        git commit -m "[automatic] Version ${version_str}"
+        git tag -a -m "[automatic] Version ${version_str}" "v${version_str}"
+        pr_branch="misc/version-${version_str}"
+        git push origin "$pr_branch" --tags
+        echo "pr_branch=$pr_branch" >> $GITHUB_OUTPUT
+        echo "version_str=$version_str" >> $GITHUB_OUTPUT
+    
+    - name: Create Pull Request
+      
+      run: |
+       pr_branch=${{ steps.push_step.outputs.pr_branch }}
+       version_str=${{ steps.push_step.outputs.version_str }}
+       gh pr create -B "$pr_branch" -H main --title "Update version $version_str" --body 'Created by Github action'
+      env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
