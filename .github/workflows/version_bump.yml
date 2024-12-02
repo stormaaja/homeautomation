@@ -33,7 +33,8 @@ jobs:
         version_str=$(perl -nle 'print $1 if /Version = "([^"]+)"/' "version.go")
         git add version.go
         git checkout -b "misc/version-${version_str}"
-        git commit -S -m "[automatic] Data-Store Version ${version_str}"
+        # git commit -S -m "[automatic] Data-Store Version ${version_str}"
+        git commit -m "[automatic] Data-Store Version ${version_str}"
         pr_branch="misc/version-${version_str}"
         git push origin "$pr_branch"
         echo "pr_branch=$pr_branch" >> $GITHUB_OUTPUT
