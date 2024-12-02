@@ -1,17 +1,15 @@
-# This workflow will add and push tags to the repository when a version bump pull request is merged to main.
-# Pull request branch name is misc/version-<version_number>
-
 name: Tag New Version
-
 on:
   pull_request:
     types: [closed]
     branches:
       - main
+    paths:
+      - 'misc/version-*'
 
 jobs:
   version_tag:
-    if: github.ref == 'refs/heads/misc/version-*' && github.event_name == 'pull_request'
+    if: github.event.pull_request.merged == true && github.event.pull_request.base.ref == 'main'
     runs-on: ubuntu-latest
     permissions: 
       contents: write
@@ -31,4 +29,3 @@ jobs:
         git tag -a -m "[automatic] Version ${version_str}" "v${version_str}"
         pr_branch="misc/version-${version_str}"
         git push origin "$pr_branch" --tags
-      
