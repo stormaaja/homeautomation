@@ -6,11 +6,8 @@ name: Tag New Version
 on:
   pull_request:
     types: [closed]
-    branches-ignore:
-      - '*'
-    paths:
-      - 'misc/version-*'
-
+    branches:
+      - main
 
 jobs:
   version_tag:
