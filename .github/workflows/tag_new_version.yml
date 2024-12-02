@@ -26,5 +26,4 @@ jobs:
         git config --local user.name "github-actions[bot]"
         version_str=$(perl -nle 'print $1 if /Version = "([^"]+)"/' "version.go")
         git tag -a -m "[automatic] Version ${version_str}" "v${version_str}"
-        pr_branch="misc/version-${version_str}"
-        git push origin "$pr_branch" --tags
+        git push origin main --tags
