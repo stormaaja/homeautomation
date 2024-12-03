@@ -1,0 +1,36 @@
+name: Release New Version
+on:
+  pull_request:
+    types: [closed]
+    branches:
+      - main
+
+jobs:
+  version_tag:
+    if: github.event.pull_request.merged == true && startsWith(github.event.pull_request.head.ref, 'misc/version-')
+    runs-on: ubuntu-latest
+
+    permissions: 
+      contents: write
+    steps:
+    - uses: actions/checkout@v4
+      with:
+        fetch-depth: 0
+
+    - name: Build new version for Linux
+      id: build_step
+      working-directory: ./data-store
+      run: |
+        version_str=$(perl -nle 'print $1 if /Version = "([^"]+)"/' "version.go")
+        file="data-store-v${version_str}-linux-amd64"
+        env GOOS=linux GOARCH=amd64 go build ./...
+        echo "version_str=$version_str" >> $GITHUB_OUTPUT
+        echo "file=$file" >> $GITHUB_OUTPUT
+    
+    - name: Create new release
+      id: release_step
+      working-directory: ./data-store
+      run: |
+        version_str=${{ steps.build_step.outputs.version_str }}
+        file=${{ steps.build_step.outputs.file }}
+        gh release create "v${version_str}" $file --title "Release v${version_str}" --generate-notes --target main
