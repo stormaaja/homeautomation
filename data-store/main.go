@@ -63,6 +63,8 @@ func main() {
 		&memoryStore,
 		[]store.MeasurementStore{&influxDbClient},
 	)
+	port := os.Getenv("PORT")
 
-	r.Run(":8080")
+	log.Println("Server starting on port ", port)
+	r.Run(":" + port)
 }
