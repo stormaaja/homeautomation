@@ -23,6 +23,7 @@ jobs:
       run: |
         version_str=$(perl -nle 'print $1 if /Version = "([^"]+)"/' "version.go")
         file="data-store-v${version_str}-linux-amd64"
+        echo "Building the binary for Linux with version $version_str"
         env GOOS=linux GOARCH=amd64 go build ./...
         echo "version_str=$version_str" >> $GITHUB_OUTPUT
         echo "file=$file" >> $GITHUB_OUTPUT
