@@ -7,6 +7,8 @@ on:
     types: [closed]
     branches:
       - main
+    paths:
+      - 'data-store/**'
 
 jobs:
   data_store_version_bump:
