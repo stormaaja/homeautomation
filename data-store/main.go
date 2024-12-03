@@ -44,15 +44,15 @@ func CreateRoutes(
 }
 
 func main() {
-	log.Println("Starting server...")
+	log.Printf("Starting %s server...", os.Getenv("ENVIRONMENT"))
 	log.Println("Version: ", Version)
 	if err := godotenv.Load(); err != nil {
-		log.Fatalf("error loading environment variables: %v", err)
+		log.Fatalf("Error loading environment variables: %v", err)
 		return
 	}
 
 	if err := configvalidators.IsConfigEnvironmentVariablesValid(); err != nil {
-		log.Fatalf("error: %v", err)
+		log.Fatalf("Error: %v", err)
 		return
 	}
 	var influxDbClient = store.NewInfluxDBClient()
