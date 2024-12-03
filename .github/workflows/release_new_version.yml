@@ -6,7 +6,7 @@ on:
       - main
 
 jobs:
-  version_tag:
+  new_version_release:
     if: github.event.pull_request.merged == true && startsWith(github.event.pull_request.head.ref, 'misc/version-')
     runs-on: ubuntu-latest
 
