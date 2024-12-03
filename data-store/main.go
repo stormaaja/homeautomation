@@ -14,20 +14,24 @@ import (
 	"github.com/joho/godotenv"
 )
 
+func GetGinEnvironment() string {
+	switch os.Getenv("ENVIRONMENT") {
+	case "production":
+		return gin.ReleaseMode
+	case "test":
+		return gin.TestMode
+	default:
+		return gin.DebugMode
+	}
+}
+
 func CreateRoutes(
 	memoryStore store.DataStore,
 	measurementStores []store.MeasurementStore,
 ) *gin.Engine {
 	allowedProxies := os.Getenv("ALLOWED_PROXIES")
+	gin.SetMode(GetGinEnvironment())
 	r := gin.Default()
-	switch os.Getenv("ENVIRONMENT") {
-	case "production":
-		gin.SetMode(gin.ReleaseMode)
-	case "test":
-		gin.SetMode(gin.TestMode)
-	default:
-		gin.SetMode(gin.DebugMode)
-	}
 
 	r.SetTrustedProxies(
 		strings.Split(allowedProxies, ","),
