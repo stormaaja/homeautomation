@@ -1,6 +1,7 @@
 package store
 
 import (
+	"log"
 	"os"
 	"time"
 
@@ -14,11 +15,15 @@ type InfluxDBClient struct {
 	Organization string
 }
 
-func NewInfluxDBClient() InfluxDBClient {
+func NewInfluxDBClient() *InfluxDBClient {
 	url := os.Getenv("INFLUXDB_URL")
 	bucket := os.Getenv("INFLUXDB_DATABASE")
 	token := os.Getenv("INFLUXDB_TOKEN")
-	return InfluxDBClient{
+	if url == "" || bucket == "" || token == "" {
+		log.Println("InfluxDB environment variables not set. Not creating InfluxDB client.")
+		return nil
+	}
+	return &InfluxDBClient{
 		Client: influxdb2.NewClientWithOptions(
 			url,
 			token,
