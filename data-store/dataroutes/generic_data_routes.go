@@ -26,7 +26,7 @@ func CreateGenericDataRoutes(
 			field := c.Param("field")
 			measurement, success := datastore.GetMeasurement(measurementType, deviceId)
 			if !success {
-				c.AbortWithError(http.StatusBadRequest, fmt.Errorf("device not found"))
+				c.AbortWithError(http.StatusBadRequest, fmt.Errorf("device or measurement type not found"))
 				return
 			}
 			var valueString string = ""
