@@ -41,7 +41,6 @@ jobs:
         echo "version_str=$version_str" >> $GITHUB_OUTPUT
     
     - name: Create Pull Request
-      
       run: |
        pr_branch=${{ steps.push_step.outputs.pr_branch }}
        version_str=${{ steps.push_step.outputs.version_str }}
