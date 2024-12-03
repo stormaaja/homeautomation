@@ -75,6 +75,7 @@ func main() {
 		&memoryStore,
 		measurementStores,
 	)
+
 	port := os.Getenv("PORT")
 
 	log.Println("Server starting on port ", port)
