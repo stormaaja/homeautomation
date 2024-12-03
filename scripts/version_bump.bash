@@ -1,5 +1,14 @@
 #!/bin/bash
 
+project_dir=$1
+
+if [ -z "$project_dir" ]; then
+    echo "Usage: $0 <project_dir>"
+    exit 1
+fi
+
+cd $project_dir
+
 version_file="version.go"
 
 current_version=$(perl -nle 'print $1 if /Version = "([^"]+)"/' $version_file)

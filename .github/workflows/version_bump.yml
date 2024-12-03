@@ -21,8 +21,8 @@ jobs:
         fetch-depth: 0
 
     - name: Bump Data Store Version
-      working-directory: ./data-store
-      run: scripts/version_bump.bash
+      working-directory: ./
+      run: scripts/version_bump.bash data-store
     
     - name: Push Data Store Version
       id: push_step
