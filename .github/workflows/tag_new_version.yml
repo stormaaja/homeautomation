@@ -1,9 +1,11 @@
-name: Tag New Version
+name: Tag New Version for Data Store
 on:
   pull_request:
     types: [closed]
     branches:
       - main
+    paths:
+      - 'data-store/version.go'
 
 jobs:
   version_tag:
@@ -19,11 +21,10 @@ jobs:
         fetch-depth: 0
 
     - name: Push Data Store Version
-      id: push_step
       working-directory: ./data-store
       run: |
         git config --local user.email "github-actions[bot]@users.noreply.github.com"
         git config --local user.name "github-actions[bot]"
         version_str=$(perl -nle 'print $1 if /Version = "([^"]+)"/' "version.go")
-        git tag -a -m "[automatic] Version ${version_str}" "v${version_str}"
+        git tag -a -m "[automatic] data-store version ${version_str}" "data-store/v${version_str}"
         git push origin main --tags
