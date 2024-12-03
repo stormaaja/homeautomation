@@ -5,7 +5,15 @@
 
 version: 2
 updates:
+  - package-ecosystem: "github-actions"
+    directory: "/"
+    schedule:
+      interval: "weekly"
   - package-ecosystem: "gomod"
-    directory: "/" # Location of package manifests
+    directory: "./data-store/"
+    schedule:
+      interval: "weekly"
+  - package-ecosystem: "gomod"
+    directory: "./security/"
     schedule:
       interval: "weekly"
