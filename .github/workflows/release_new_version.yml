@@ -34,3 +34,5 @@ jobs:
         version_str=${{ steps.build_step.outputs.version_str }}
         file=${{ steps.build_step.outputs.file }}
         gh release create "v${version_str}" $file --title "Release v${version_str}" --generate-notes --target main
+      env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
