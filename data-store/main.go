@@ -44,6 +44,10 @@ func CreateRoutes(
 }
 
 func main() {
+	var requiredEnvironmentVariables = []string{
+		"API_TOKEN",
+		"PORT",
+	}
 	log.Printf("Starting %s server...", os.Getenv("ENVIRONMENT"))
 	log.Println("Version: ", Version)
 	if err := godotenv.Load(); err != nil {
@@ -51,7 +55,9 @@ func main() {
 		return
 	}
 
-	if err := configvalidators.IsConfigEnvironmentVariablesValid(); err != nil {
+	if err := configvalidators.IsConfigEnvironmentVariablesValid(
+		requiredEnvironmentVariables,
+	); err != nil {
 		log.Fatalf("Error: %v", err)
 		return
 	}
