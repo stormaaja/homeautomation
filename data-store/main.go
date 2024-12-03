@@ -67,9 +67,13 @@ func main() {
 	var memoryStore = store.MemoryStore{
 		Data: make(map[string]map[string]interface{}),
 	}
+	var measurementStores = []store.MeasurementStore{}
+	if influxDbClient != nil {
+		measurementStores = append(measurementStores, influxDbClient)
+	}
 	r := CreateRoutes(
 		&memoryStore,
-		[]store.MeasurementStore{&influxDbClient},
+		measurementStores,
 	)
 	port := os.Getenv("PORT")
 
