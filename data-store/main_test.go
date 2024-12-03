@@ -10,6 +10,25 @@ import (
 	"github.com/gin-gonic/gin"
 )
 
+func TestGetGinEnvironment(t *testing.T) {
+	tests := []struct {
+		env      string
+		expected string
+	}{
+		{"production", gin.ReleaseMode},
+		{"test", gin.TestMode},
+		{"development", gin.DebugMode},
+	}
+
+	for _, test := range tests {
+		os.Setenv("ENVIRONMENT", test.env)
+		result := GetGinEnvironment()
+		if result != test.expected {
+			t.Errorf("Expected %s, got %s", test.expected, result)
+		}
+	}
+}
+
 func TestInvalidToken(t *testing.T) {
 	gin.SetMode(gin.TestMode)
 	os.Setenv("API_TOKEN", "valid-token")
