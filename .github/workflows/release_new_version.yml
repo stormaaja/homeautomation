@@ -26,7 +26,7 @@ jobs:
         echo "Building the binary for Linux with version $version_str"
         env GOOS=linux GOARCH=amd64 go build ./...
         echo "Binary $file created. Moving it to the $HOME directory"
-        mv data-store $HOME/$file
+        mv $file $HOME/$file
         echo "version_str=$version_str" >> $GITHUB_OUTPUT
         echo "file=$file" >> $GITHUB_OUTPUT
     
