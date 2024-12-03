@@ -1,4 +1,4 @@
-name: Release New Version
+name: Release New data-store Version
 on:
   pull_request:
     types: [closed]
