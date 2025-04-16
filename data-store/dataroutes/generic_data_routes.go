@@ -18,6 +18,7 @@ func CreateGenericDataRoutes(
 ) {
 	group := g.Group("/data/:measurement/:id/:field")
 	{
+		group.Use(middleware.TokenCheck())
 		group.Use(middleware.MeasurementTypeValidator())
 
 		group.GET("", func(c *gin.Context) {
