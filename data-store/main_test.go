@@ -4,6 +4,7 @@ import (
 	"net/http"
 	"net/http/httptest"
 	"os"
+	"stormaaja/go-ha/data-store/spot"
 	"stormaaja/go-ha/data-store/store"
 	"testing"
 
@@ -37,10 +38,11 @@ func TestInvalidToken(t *testing.T) {
 	router := CreateRoutes(
 		&memoryStore,
 		[]store.MeasurementStore{},
+		&spot.SpotHintaApiClient{},
 	)
 
 	w := httptest.NewRecorder()
-	req, _ := http.NewRequest("GET", "/healthcheck", nil)
+	req, _ := http.NewRequest("GET", "/data/temperature/location/temperature", nil)
 	router.ServeHTTP(w, req)
 
 	if w.Code != 401 {
@@ -52,14 +54,21 @@ func TestValidToken(t *testing.T) {
 	gin.SetMode(gin.TestMode)
 	os.Setenv("API_TOKEN", "valid-token")
 	memoryStore := store.MemoryStore{Data: make(map[string]map[string]interface{})}
+	memoryStore.SetMeasurement("temperature", "device-id", store.Measurement{
+		DeviceId:        "device-id",
+		MeasurementType: "temperature",
+		Field:           "temperature",
+		Value:           25.5,
+	})
 
 	router := CreateRoutes(
 		&memoryStore,
 		[]store.MeasurementStore{},
+		&spot.SpotHintaApiClient{},
 	)
 
 	w := httptest.NewRecorder()
-	req, _ := http.NewRequest("GET", "/healthcheck", nil)
+	req, _ := http.NewRequest("GET", "/data/temperature/device-id/temperature", nil)
 	req.Header.Set("Authorization", "Bearer valid-token")
 	router.ServeHTTP(w, req)
 

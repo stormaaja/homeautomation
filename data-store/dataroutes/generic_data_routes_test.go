@@ -4,6 +4,7 @@ import (
 	"bytes"
 	"net/http"
 	"net/http/httptest"
+	"os"
 	"stormaaja/go-ha/data-store/assert"
 	"stormaaja/go-ha/data-store/store"
 	"testing"
@@ -12,6 +13,7 @@ import (
 )
 
 func TestCreateGenericDataRoutes(t *testing.T) {
+	os.Setenv("API_TOKEN", "valid-token")
 	gin.SetMode(gin.TestMode)
 	router := gin.Default()
 	mockDataStore := store.MemoryStore{
@@ -32,6 +34,7 @@ func TestCreateGenericDataRoutes(t *testing.T) {
 		})
 
 		req, _ := http.NewRequest(http.MethodGet, "/data/electricity_consumption/device1/energy", nil)
+		req.Header.Add("Authorization", "Bearer valid-token")
 		resp := httptest.NewRecorder()
 		router.ServeHTTP(resp, req)
 
@@ -41,6 +44,7 @@ func TestCreateGenericDataRoutes(t *testing.T) {
 
 	t.Run("GET /data/:measurement/:id/:field - device not found", func(t *testing.T) {
 		req, _ := http.NewRequest(http.MethodGet, "/data/temperature/device2/temperature", nil)
+		req.Header.Add("Authorization", "Bearer valid-token")
 		resp := httptest.NewRecorder()
 		router.ServeHTTP(resp, req)
 
@@ -50,6 +54,7 @@ func TestCreateGenericDataRoutes(t *testing.T) {
 	t.Run("POST /data/:measurement/:id/:field - success", func(t *testing.T) {
 		body := bytes.NewBufferString("30.5")
 		req, _ := http.NewRequest(http.MethodPost, "/data/temperature/device2/temperature", body)
+		req.Header.Add("Authorization", "Bearer valid-token")
 		resp := httptest.NewRecorder()
 		router.ServeHTTP(resp, req)
 
@@ -61,6 +66,7 @@ func TestCreateGenericDataRoutes(t *testing.T) {
 	t.Run("POST /data/:measurement/:id/:field - invalid body", func(t *testing.T) {
 		body := bytes.NewBufferString("invalid")
 		req, _ := http.NewRequest(http.MethodPost, "/data/temperature/device1/temperature", body)
+		req.Header.Add("Authorization", "Bearer valid-token")
 		resp := httptest.NewRecorder()
 		router.ServeHTTP(resp, req)
 

@@ -6,7 +6,7 @@ import (
 	"stormaaja/go-ha/data-store/configvalidators"
 	"stormaaja/go-ha/data-store/dataroutes"
 	"stormaaja/go-ha/data-store/genericroutes"
-	"stormaaja/go-ha/data-store/middleware"
+	"stormaaja/go-ha/data-store/spot"
 	"stormaaja/go-ha/data-store/store"
 
 	"strings"
@@ -29,6 +29,7 @@ func GetGinEnvironment() string {
 func CreateRoutes(
 	memoryStore store.DataStore,
 	measurementStores []store.MeasurementStore,
+	spotPriceApiClient *spot.SpotHintaApiClient,
 ) *gin.Engine {
 	allowedProxies := os.Getenv("ALLOWED_PROXIES")
 	gin.SetMode(GetGinEnvironment())
@@ -37,13 +38,13 @@ func CreateRoutes(
 	r.SetTrustedProxies(
 		strings.Split(allowedProxies, ","),
 	)
-	r.Use(middleware.TokenCheck())
 	genericroutes.CreateHealthCheckRoutes(r)
 	dataroutes.CreateGenericDataRoutes(
 		r,
 		memoryStore,
 		measurementStores,
 	)
+	spot.CreateSpotPriceRoutes(r, spotPriceApiClient)
 	genericroutes.CreateStoreRoutes(r, measurementStores)
 	return r
 }
@@ -76,9 +77,14 @@ func main() {
 	if influxDbClient != nil {
 		measurementStores = append(measurementStores, influxDbClient)
 	}
+
+	spotPriceApiClient := spot.CreateSpotHintaApiClient()
+	go spotPriceApiClient.PollPrices()
+
 	r := CreateRoutes(
 		&memoryStore,
 		measurementStores,
+		&spotPriceApiClient,
 	)
 
 	port := os.Getenv("PORT")
