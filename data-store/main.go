@@ -3,11 +3,12 @@ package main
 import (
 	"log"
 	"os"
+	"stormaaja/go-ha/data-store/configvalidators"
 	"stormaaja/go-ha/data-store/dataroutes"
 	"stormaaja/go-ha/data-store/genericroutes"
 	"stormaaja/go-ha/data-store/middleware"
 	"stormaaja/go-ha/data-store/store"
-	"stormaaja/go-ha/security/configvalidators"
+
 	"strings"
 
 	"github.com/gin-gonic/gin"
