@@ -2,7 +2,7 @@ package middleware
 
 import (
 	"net/http"
-	"stormaaja/go-ha/security/requestvalidators"
+	"stormaaja/go-ha/data-store/requestvalidators"
 
 	"github.com/gin-gonic/gin"
 )

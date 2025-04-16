@@ -4,13 +4,10 @@ go 1.23.0
 
 toolchain go1.24.2
 
-replace stormaaja/go-ha/security => ../security
-
 require (
 	github.com/gin-gonic/gin v1.10.0
 	github.com/influxdata/influxdb-client-go/v2 v2.14.0
 	github.com/joho/godotenv v1.5.1
-	stormaaja/go-ha/security v0.0.0-00010101000000-000000000000
 )
 
 require (

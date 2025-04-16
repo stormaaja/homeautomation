@@ -28,11 +28,3 @@ jobs:
     - name: Test Data Store
       working-directory: ./data-store
       run: go test -v ./...
-    
-    - name: Build Security
-      working-directory: ./security
-      run: go build -v ./...
-
-    - name: Test Security
-      working-directory: ./security
-      run: go test -v ./...
