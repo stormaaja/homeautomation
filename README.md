@@ -1,3 +1,3 @@
 # homeautomation
 
-Home Automation microservice project
+Home Automation project
