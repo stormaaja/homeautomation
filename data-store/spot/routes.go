@@ -20,5 +20,17 @@ func CreateSpotPriceRoutes(
 			}
 			c.JSON(http.StatusOK, prices)
 		})
+		group.GET("/current", func(c *gin.Context) {
+			currentPrice := spotPriceApiClient.GetCurrentPrice()
+			if currentPrice == nil {
+				c.String(http.StatusInternalServerError, "Failed to get current price")
+				return
+			}
+			if c.Query("format") == "priceOnly" {
+				c.String(http.StatusOK, "%f", currentPrice.PriceWithTax)
+				return
+			}
+			c.JSON(http.StatusOK, currentPrice)
+		})
 	}
 }

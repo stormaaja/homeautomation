@@ -98,3 +98,22 @@ func (api *SpotHintaApiClient) PollPrices() {
 		}
 	}
 }
+
+func (api *SpotHintaApiClient) GetCurrentPrice() *SpotPrice {
+	if len(api.State.SpotPrices) == 0 {
+		return nil
+	}
+	lastIndex := len(api.State.SpotPrices) - 1
+	for i, price := range api.State.SpotPrices {
+		if price.DateTime.After(time.Now()) {
+			return &api.State.SpotPrices[i-1]
+		}
+		if price.DateTime.Equal(time.Now()) {
+			return &price
+		}
+		if i == lastIndex {
+			return &price
+		}
+	}
+	return nil
+}
