@@ -20,8 +20,8 @@ func TestCreateSpotPriceRoutes(t *testing.T) {
 	apiClient := &SpotHintaApiClient{
 		State: SpotHintaApiState{
 			SpotPrices: []SpotPrice{
-				{Rank: 1, DateTime: currentTime.Truncate(time.Hour), PriceNoTax: 0.1, PriceWithTax: 0.12},
-				{Rank: 2, DateTime: currentTime.Truncate(time.Hour).Add(time.Hour), PriceNoTax: 0.2, PriceWithTax: 0.24},
+				{Rank: 1, DateTime: currentTime.Truncate(time.Hour), PriceNoTax: 0.1, PriceWithTax: 0.12, PercentageRank: 0.5},
+				{Rank: 2, DateTime: currentTime.Truncate(time.Hour).Add(time.Hour), PriceNoTax: 0.2, PriceWithTax: 0.24, PercentageRank: 1.0},
 			},
 			LastCheck: time.Now(),
 		},

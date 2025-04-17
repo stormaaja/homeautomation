@@ -13,10 +13,11 @@ import (
 var url = "https://api.spot-hinta.fi/TodayAndDayForward"
 
 type SpotPrice struct {
-	Rank         int
-	DateTime     time.Time
-	PriceNoTax   float64
-	PriceWithTax float64
+	Rank           int
+	DateTime       time.Time
+	PriceNoTax     float64
+	PriceWithTax   float64
+	PercentageRank float64
 }
 
 type SpotHintaApiState struct {
@@ -78,6 +79,17 @@ func (api *SpotHintaApiClient) UpdatePrices() error {
 	err = json.Unmarshal(body, &prices)
 	if err != nil {
 		return fmt.Errorf("failed to parse data: %v", err)
+	}
+	dailyPrices := map[int][]SpotPrice{}
+	for _, price := range prices {
+		pricesForDay, found := dailyPrices[price.DateTime.Day()]
+		if !found {
+			pricesForDay = []SpotPrice{}
+		}
+		dailyPrices[price.DateTime.Day()] = append(pricesForDay, price)
+	}
+	for i, price := range prices {
+		prices[i].PercentageRank = (float64(price.Rank) / float64(len(dailyPrices[price.DateTime.Day()]))) * 100.0
 	}
 	api.State.SpotPrices = prices
 	api.State.LastCheck = time.Now()
