@@ -25,4 +25,4 @@ go.work.sum
 .env
 
 # States
-data-store/spot_hinta_api_state.json
+data-store/*.json

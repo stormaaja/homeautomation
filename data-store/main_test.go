@@ -39,6 +39,8 @@ func TestInvalidToken(t *testing.T) {
 		&memoryStore,
 		[]store.MeasurementStore{},
 		&spot.SpotHintaApiClient{},
+		&store.GenericStore{},
+		&store.GenericStore{},
 	)
 
 	w := httptest.NewRecorder()
@@ -65,6 +67,8 @@ func TestValidToken(t *testing.T) {
 		&memoryStore,
 		[]store.MeasurementStore{},
 		&spot.SpotHintaApiClient{},
+		&store.GenericStore{},
+		&store.GenericStore{},
 	)
 
 	w := httptest.NewRecorder()
