@@ -10,7 +10,7 @@ import (
 func CreateMinersRoutes(
 	g *gin.RouterGroup,
 	configurationStore *store.GenericStore,
-	stateStore *store.GenericStore,
+	stateStore *store.MinerStateStore,
 ) {
 	group := g.Group("/miners")
 	{

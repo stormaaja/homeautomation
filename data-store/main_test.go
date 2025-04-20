@@ -39,7 +39,7 @@ func TestInvalidToken(t *testing.T) {
 		&memoryStore,
 		[]store.MeasurementStore{},
 		&spot.SpotHintaApiClient{},
-		&store.GenericStore{},
+		&store.MinerStateStore{},
 		&store.GenericStore{},
 	)
 
@@ -67,7 +67,7 @@ func TestValidToken(t *testing.T) {
 		&memoryStore,
 		[]store.MeasurementStore{},
 		&spot.SpotHintaApiClient{},
-		&store.GenericStore{},
+		&store.MinerStateStore{},
 		&store.GenericStore{},
 	)
 

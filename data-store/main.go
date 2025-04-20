@@ -10,7 +10,7 @@ import (
 	"stormaaja/go-ha/data-store/genericroutes"
 	v1 "stormaaja/go-ha/data-store/routes/v1"
 	"stormaaja/go-ha/data-store/spot"
-	"stormaaja/go-ha/data-store/state"
+
 	"stormaaja/go-ha/data-store/store"
 	"time"
 
@@ -35,7 +35,7 @@ func CreateRoutes(
 	memoryStore store.DataStore,
 	measurementStores []store.MeasurementStore,
 	spotPriceApiClient *spot.SpotHintaApiClient,
-	minerStateStore *store.GenericStore,
+	minerStateStore *store.MinerStateStore,
 	minerConfigurationStore *store.GenericStore,
 ) *gin.Engine {
 	allowedProxies := os.Getenv("ALLOWED_PROXIES")
@@ -56,8 +56,8 @@ func CreateRoutes(
 
 	v1.CreateV1Routes(
 		r,
-		minerStateStore,
 		minerConfigurationStore,
+		minerStateStore,
 	)
 	return r
 }
@@ -88,7 +88,7 @@ func WakeMiner(macAddress string) {
 }
 
 func UpdateMinerStates(
-	minerStateStore *store.GenericStore,
+	minerStateStore *store.MinerStateStore,
 	spotPriceChan chan spot.SpotPrice,
 	localConfig *configuration.LocalConfig,
 ) {
@@ -97,53 +97,38 @@ func UpdateMinerStates(
 		isMining := currentSpotPrice.PriceNoTax < localConfig.MaxSpotPriceForMining
 		log.Printf("Current spot price: %f, mining: %t", currentSpotPrice.PriceNoTax, isMining)
 
-		for minerId := range minerStateStore.Values {
+		for _, minerId := range minerStateStore.GetIds() {
 			minerState, err := minerStateStore.GetValue(minerId)
 			if err != nil {
 				log.Printf("Error getting miner state: %v", err)
 				continue
 			}
-			minerStateMap, ok := minerState.(map[string]any)
-			if !ok {
-				log.Printf("Error casting miner state: %v", minerState)
-				continue
-			}
-			isCurrentlyMining, ok := minerStateMap["isMining"].(bool)
-			if !ok {
-				log.Printf("Error casting isMining: %v", minerStateMap["isMining"])
-				continue
-			}
 
 			localMinerConfig := localConfig.GetMinerConfig(minerId)
-			if isCurrentlyMining != isMining && localMinerConfig != nil && localMinerConfig.WakeOnLan && localMinerConfig.MacAddress != "" {
+			if minerState.IsMining != isMining && localMinerConfig != nil && localMinerConfig.WakeOnLan && localMinerConfig.MacAddress != "" {
 				WakeMiner(localMinerConfig.MacAddress)
 			}
 
-			minerStateMap["isMining"] = isMining
-			minerStateStore.SetValue(minerId, minerStateMap)
+			minerState.IsMining = isMining
+			minerStateStore.SetValue(minerId, minerState)
 		}
 	}
 }
 
-func SetMinerStates(localConfig *configuration.LocalConfig, minerStateStore *store.GenericStore) {
+func SetMinerStates(localConfig *configuration.LocalConfig, minerStateStore *store.MinerStateStore) {
 	minerIds := minerStateStore.GetIds()
-	lastState := state.MinerState{IsMining: true}
+	lastState := store.MinerState{IsMining: true}
 	if len(minerIds) > 0 {
 		lastStateFromStore, err := minerStateStore.GetValue(minerIds[0])
 		if err != nil {
 			log.Printf("Error getting last state: %v", err)
 		} else {
-			lastMinerState, ok := lastStateFromStore.(state.MinerState)
-			if ok {
-				lastState = lastMinerState
-			} else {
-				log.Printf("Error casting last state: %v", lastStateFromStore)
-			}
+			lastState = lastStateFromStore
 		}
 	}
 	minerStateStore.Clear()
 	for _, minerLocalConfig := range localConfig.Miners {
-		minerState := state.MinerState{
+		minerState := store.MinerState{
 			DeviceId: minerLocalConfig.MinerId,
 			IsMining: lastState.IsMining,
 		}
@@ -151,7 +136,7 @@ func SetMinerStates(localConfig *configuration.LocalConfig, minerStateStore *sto
 	}
 }
 
-func PollConfigChanges(localConfig *configuration.LocalConfig, minerStateStore *store.GenericStore) {
+func PollConfigChanges(localConfig *configuration.LocalConfig, minerStateStore *store.MinerStateStore) {
 	for {
 		changed := localConfig.ReloadIfNeeded()
 		if changed {
@@ -192,7 +177,7 @@ func main() {
 		measurementStores = append(measurementStores, influxDbClient)
 	}
 
-	minerStateStore := store.CreateGenericStore("miners_state.json")
+	minerStateStore := store.CreateMinerStateStore()
 
 	spotPriceApiClient := spot.CreateSpotHintaApiClient()
 	spotPriceChan := make(chan spot.SpotPrice, 1)
@@ -210,8 +195,8 @@ func main() {
 		&memoryStore,
 		measurementStores,
 		&spotPriceApiClient,
-		&minerConfigurationStore,
 		&minerStateStore,
+		&minerConfigurationStore,
 	)
 
 	port := os.Getenv("PORT")
