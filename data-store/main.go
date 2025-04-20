@@ -78,6 +78,7 @@ func PollCurrentPrice(
 }
 
 func WakeMiner(macAddress string) {
+	log.Printf("Waking miner with MAC address %s", macAddress)
 	err := exec.Command("wakeonlan", macAddress).Run()
 	if err != nil {
 		log.Printf("Failed to wake miner with MAC address %s: %v", macAddress, err)
