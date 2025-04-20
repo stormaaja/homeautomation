@@ -94,6 +94,8 @@ func UpdateMinerStates(
 ) {
 	for {
 		currentSpotPrice := <-spotPriceChan
+		isMining := currentSpotPrice.PriceNoTax < localConfig.MaxSpotPriceForMining
+		log.Printf("Current spot price: %f, mining: %t", currentSpotPrice.PriceNoTax, isMining)
 
 		for minerId := range minerStateStore.Values {
 			minerState, err := minerStateStore.GetValue(minerId)
@@ -101,10 +103,19 @@ func UpdateMinerStates(
 				log.Printf("Error getting miner state: %v", err)
 				continue
 			}
-			minerStateMap := minerState.(map[string]any)
-			isMining := currentSpotPrice.PriceNoTax < localConfig.MaxSpotPriceForMining
+			minerStateMap, ok := minerState.(map[string]any)
+			if !ok {
+				log.Printf("Error casting miner state: %v", minerState)
+				continue
+			}
+			isCurrentlyMining, ok := minerStateMap["isMining"].(bool)
+			if !ok {
+				log.Printf("Error casting isMining: %v", minerStateMap["isMining"])
+				continue
+			}
+
 			localMinerConfig := localConfig.GetMinerConfig(minerId)
-			if minerStateMap["isMining"] != nil && minerStateMap["isMining"].(bool) != isMining && localMinerConfig != nil && localMinerConfig.WakeOnLan && localMinerConfig.MacAddress != "" {
+			if isCurrentlyMining != isMining && localMinerConfig != nil && localMinerConfig.WakeOnLan && localMinerConfig.MacAddress != "" {
 				WakeMiner(localMinerConfig.MacAddress)
 			}
 
