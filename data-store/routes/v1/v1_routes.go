@@ -10,7 +10,7 @@ import (
 func CreateV1Routes(
 	g *gin.Engine,
 	configurationStore *store.GenericStore,
-	stateStore *store.GenericStore,
+	stateStore *store.MinerStateStore,
 ) {
 	group := g.Group("/v1")
 	{
