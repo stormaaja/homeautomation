@@ -125,34 +125,38 @@ func UpdateMinerStates(
 	}
 }
 
+func SetMinerStates(localConfig *configuration.LocalConfig, minerStateStore *store.GenericStore) {
+	minerIds := minerStateStore.GetIds()
+	lastState := state.MinerState{IsMining: true}
+	if len(minerIds) > 0 {
+		lastStateFromStore, err := minerStateStore.GetValue(minerIds[0])
+		if err != nil {
+			log.Printf("Error getting last state: %v", err)
+		} else {
+			lastMinerState, ok := lastStateFromStore.(state.MinerState)
+			if ok {
+				lastState = lastMinerState
+			} else {
+				log.Printf("Error casting last state: %v", lastStateFromStore)
+			}
+		}
+	}
+	minerStateStore.Clear()
+	for _, minerLocalConfig := range localConfig.Miners {
+		minerState := state.MinerState{
+			DeviceId: minerLocalConfig.MinerId,
+			IsMining: lastState.IsMining,
+		}
+		minerStateStore.SetValue(minerLocalConfig.MinerId, minerState)
+	}
+}
+
 func PollConfigChanges(localConfig *configuration.LocalConfig, minerStateStore *store.GenericStore) {
 	for {
 		changed := localConfig.ReloadIfNeeded()
 		if changed {
 			log.Println("Local config changed, updating miner states")
-			minerIds := minerStateStore.GetIds()
-			lastState := state.MinerState{IsMining: true}
-			if len(minerIds) > 0 {
-				lastStateFromStore, err := minerStateStore.GetValue(minerIds[0])
-				if err != nil {
-					log.Printf("Error getting last state: %v", err)
-				} else {
-					lastMinerState, ok := lastStateFromStore.(state.MinerState)
-					if ok {
-						lastState = lastMinerState
-					} else {
-						log.Printf("Error casting last state: %v", lastStateFromStore)
-					}
-				}
-			}
-			minerStateStore.Clear()
-			for _, minerLocalConfig := range localConfig.Miners {
-				minerState := state.MinerState{
-					DeviceId: minerLocalConfig.MinerId,
-					IsMining: lastState.IsMining,
-				}
-				minerStateStore.SetValue(minerLocalConfig.MinerId, minerState)
-			}
+			SetMinerStates(localConfig, minerStateStore)
 		}
 
 		time.Sleep(time.Minute)
@@ -193,6 +197,7 @@ func main() {
 	spotPriceApiClient := spot.CreateSpotHintaApiClient()
 	spotPriceChan := make(chan spot.SpotPrice, 1)
 	localConfig := configuration.CreateLocalConfig()
+	SetMinerStates(&localConfig, &minerStateStore)
 
 	go spotPriceApiClient.PollPrices()
 	go PollCurrentPrice(&spotPriceApiClient, spotPriceChan)
