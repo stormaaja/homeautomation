@@ -15,11 +15,15 @@ func CreateGenericStore(filePath string) GenericStore {
 		FilePath: filePath,
 		Values:   make(map[string]any),
 	}
-	err := tools.ReadJsonFile(filePath, &store.Values)
+	err := store.Load()
 	if err != nil {
 		fmt.Printf("failed to read store file: %v\n", err)
 	}
 	return store
+}
+
+func (gs *GenericStore) Load() error {
+	return tools.ReadJsonFile(gs.FilePath, &gs.Values)
 }
 
 func (gs *GenericStore) Save() error {
