@@ -18,11 +18,15 @@ func CreateMinerStateStore() MinerStateStore {
 	store := MinerStateStore{
 		States: make(map[string]MinerState),
 	}
-	err := tools.ReadJsonFile("miner_state.json", &store)
+	err := store.Load()
 	if err != nil {
 		fmt.Printf("failed to read miner state store file: %v\n", err)
 	}
 	return store
+}
+
+func (mss *MinerStateStore) Load() error {
+	return tools.ReadJsonFile("miner_state.json", mss)
 }
 
 func (mss *MinerStateStore) Save() error {
