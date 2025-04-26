@@ -1,6 +1,7 @@
 package miners
 
 import (
+	"fmt"
 	"log"
 	"net/http"
 	"stormaaja/go-ha/data-store/middleware"
@@ -35,6 +36,10 @@ func CreateMinersRoutes(
 					return
 				}
 				c.JSON(http.StatusOK, minerState)
+			})
+			minerGroup.GET("/xmrig/config.json", func(c *gin.Context) {
+				id := c.Param("id")
+				c.File(fmt.Sprintf("xmrig-configs/%s/config.json", id))
 			})
 		}
 		changeGroup := group.Group("/refresh")
