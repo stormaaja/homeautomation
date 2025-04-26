@@ -15,9 +15,11 @@ func CreateGenericStore(filePath string) GenericStore {
 		FilePath: filePath,
 		Values:   make(map[string]any),
 	}
-	err := store.Load()
-	if err != nil {
-		fmt.Printf("failed to read store file: %v\n", err)
+	if filePath != "" {
+		err := store.Load()
+		if err != nil {
+			fmt.Printf("failed to read store file: %v\n", err)
+		}
 	}
 	return store
 }
