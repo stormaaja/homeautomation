@@ -3,11 +3,13 @@ package store
 import (
 	"fmt"
 	"stormaaja/go-ha/data-store/tools"
+	"time"
 )
 
 type MinerState struct {
-	DeviceId string
-	IsMining bool
+	DeviceId          string
+	IsMining          bool
+	LastConfigChanged time.Time
 }
 
 type MinerStateStore struct {
