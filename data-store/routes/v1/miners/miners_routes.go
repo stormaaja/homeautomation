@@ -16,24 +16,27 @@ func CreateMinersRoutes(
 ) {
 	group := g.Group("/miners")
 	{
-		group.GET("/:id/config", func(c *gin.Context) {
-			id := c.Param("id")
-			minerConfig, err := configurationStore.GetValue(id)
-			if err != nil {
-				c.JSON(http.StatusBadRequest, gin.H{"error": "Miner not found"})
-				return
-			}
-			c.JSON(http.StatusOK, minerConfig)
-		})
-		group.GET("/:id/state", func(c *gin.Context) {
-			id := c.Param("id")
-			minerState, err := stateStore.GetValue(id)
-			if err != nil {
-				c.JSON(http.StatusBadRequest, gin.H{"error": "Miner not found"})
-				return
-			}
-			c.JSON(http.StatusOK, minerState)
-		})
+		minerGroup := group.Group("/:id")
+		{
+			minerGroup.GET("/config", func(c *gin.Context) {
+				id := c.Param("id")
+				minerConfig, err := configurationStore.GetValue(id)
+				if err != nil {
+					c.JSON(http.StatusBadRequest, gin.H{"error": "Miner not found"})
+					return
+				}
+				c.JSON(http.StatusOK, minerConfig)
+			})
+			minerGroup.GET("/state", func(c *gin.Context) {
+				id := c.Param("id")
+				minerState, err := stateStore.GetValue(id)
+				if err != nil {
+					c.JSON(http.StatusBadRequest, gin.H{"error": "Miner not found"})
+					return
+				}
+				c.JSON(http.StatusOK, minerState)
+			})
+		}
 		changeGroup := group.Group("/refresh")
 		{
 			changeGroup.Use(middleware.TokenCheck())
