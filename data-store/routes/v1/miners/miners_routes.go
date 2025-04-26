@@ -12,14 +12,15 @@ import (
 
 func CreateMinersRoutes(
 	g *gin.RouterGroup,
-	configurationStore *store.GenericStore,
+	configurationStore *store.GenericStore, // TODO: Remove
 	stateStore *store.MinerStateStore,
 ) {
 	group := g.Group("/miners")
 	{
 		minerGroup := group.Group("/:id")
 		{
-			minerGroup.GET("/config", func(c *gin.Context) {
+			minerGroup.GET("/config", middleware.Deprecated(), func(c *gin.Context) {
+
 				id := c.Param("id")
 				minerConfig, err := configurationStore.GetValue(id)
 				if err != nil {
