@@ -1,6 +1,7 @@
 package main
 
 import (
+	"fmt"
 	"log"
 	"os"
 	"os/exec"
@@ -148,6 +149,31 @@ func PollConfigChanges(localConfig *configuration.LocalConfig, minerStateStore *
 	}
 }
 
+func PollXmrigConfigChanges(
+	minerStateStore *store.MinerStateStore,
+) {
+	for {
+		minerIds := minerStateStore.GetIds()
+		for _, minerId := range minerIds {
+			stat, err := os.Stat(fmt.Sprintf("xmrig-configs/%s/config.json", minerId))
+			if err != nil {
+				continue
+			}
+			minerState, err := minerStateStore.GetValue(minerId)
+			if err != nil {
+				log.Printf("Error getting miner state: %v", err)
+				continue
+			}
+			if minerState.LastConfigChanged != stat.ModTime() {
+				minerState.LastConfigChanged = stat.ModTime()
+				minerStateStore.SetValue(minerId, minerState)
+				log.Printf("Updated config change time for miner %s", minerId)
+			}
+		}
+		time.Sleep(time.Minute)
+	}
+}
+
 func main() {
 	if err := godotenv.Load(); err != nil {
 		log.Fatalf("Error loading environment variables: %v", err)
@@ -188,6 +214,7 @@ func main() {
 	go PollCurrentPrice(&spotPriceApiClient, spotPriceChan)
 	go UpdateMinerStates(&minerStateStore, spotPriceChan, &localConfig)
 	go PollConfigChanges(&localConfig, &minerStateStore)
+	go PollXmrigConfigChanges(&minerStateStore)
 
 	minerConfigurationStore := store.CreateGenericStore("miners_config.json")
 

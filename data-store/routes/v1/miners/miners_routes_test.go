@@ -67,7 +67,7 @@ func TestCreateMinersRoutes(t *testing.T) {
 		router.ServeHTTP(resp, req)
 
 		assert.Equal(t, http.StatusOK, resp.Code)
-		assert.JSONEq(t, `{"DeviceId": "1", "IsMining": true}`, resp.Body.String())
+		assert.JSONEq(t, `{"DeviceId": "1", "IsMining": true, "LastConfigChanged":"0001-01-01T00:00:00Z"}`, resp.Body.String())
 	})
 
 	t.Run("GET /miners/:id/state - Miner Not Found", func(t *testing.T) {
