@@ -1,6 +1,7 @@
 package middleware
 
 import (
+	"log"
 	"net/http"
 	"stormaaja/go-ha/data-store/requestvalidators"
 
@@ -14,5 +15,12 @@ func TokenCheck() gin.HandlerFunc {
 			c.Abort()
 			return
 		}
+	}
+}
+
+func Deprecated() gin.HandlerFunc {
+	return func(c *gin.Context) {
+		log.Printf("Deprecated endpoint: %s", c.Request.URL.Path)
+		c.Next()
 	}
 }
