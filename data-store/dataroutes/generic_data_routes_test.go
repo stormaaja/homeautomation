@@ -23,7 +23,7 @@ func TestCreateGenericDataRoutes(t *testing.T) {
 		Items: make(map[string]float64),
 	}
 	measurementStores := []store.MeasurementStore{&mockMeasurementStore}
-	CreateGenericDataRoutes(router, mockDataStore, measurementStores)
+	CreateGenericDataRoutes(&router.RouterGroup, mockDataStore, measurementStores)
 
 	t.Run("GET /data/:measurement/:id/:field - success", func(t *testing.T) {
 		mockDataStore.SetMeasurement("electricity_consumption", "device1", store.Measurement{
