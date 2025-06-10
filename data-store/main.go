@@ -108,7 +108,7 @@ func UpdateMinerStates(
 			}
 
 			localMinerConfig := localConfig.GetMinerConfig(minerId)
-			if minerState.IsMining != isMining && localMinerConfig != nil && localMinerConfig.WakeOnLan && localMinerConfig.MacAddress != "" {
+			if isMining && minerState.IsMining != isMining && localMinerConfig != nil && localMinerConfig.WakeOnLan && localMinerConfig.MacAddress != "" {
 				WakeMiner(localMinerConfig.MacAddress)
 			}
 
