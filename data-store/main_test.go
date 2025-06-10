@@ -1,6 +1,7 @@
 package main
 
 import (
+	"bytes"
 	"net/http"
 	"net/http/httptest"
 	"os"
@@ -44,7 +45,8 @@ func TestInvalidToken(t *testing.T) {
 	)
 
 	w := httptest.NewRecorder()
-	req, _ := http.NewRequest("GET", "/data/temperature/location/temperature", nil)
+	body := bytes.NewBufferString("30.5")
+	req, _ := http.NewRequest(http.MethodPost, "/data/temperature/device2/temperature", body)
 	router.ServeHTTP(w, req)
 
 	if w.Code != 401 {
@@ -72,12 +74,13 @@ func TestValidToken(t *testing.T) {
 	)
 
 	w := httptest.NewRecorder()
-	req, _ := http.NewRequest("GET", "/data/temperature/device-id/temperature", nil)
+	body := bytes.NewBufferString("30.5")
+	req, _ := http.NewRequest(http.MethodPost, "/data/temperature/device2/temperature", body)
 	req.Header.Set("Authorization", "Bearer valid-token")
 	router.ServeHTTP(w, req)
 
-	if w.Code != 200 {
-		t.Errorf("Expected status code 200, got %v", w.Code)
+	if w.Code != 201 {
+		t.Errorf("Expected status code 201, got %v", w.Code)
 	}
 
 }

@@ -3,6 +3,7 @@ package assert
 import (
 	"encoding/json"
 	"maps"
+	"strings"
 	"testing"
 )
 
@@ -14,6 +15,18 @@ func True(
 		t.Helper()
 		t.Errorf(
 			"Assertion failed. Expected true, got false. Message",
+		)
+	}
+}
+
+func False(
+	t *testing.T,
+	condition bool,
+) {
+	if condition {
+		t.Helper()
+		t.Errorf(
+			"Assertion failed. Expected false, got true. Message",
 		)
 	}
 }
@@ -62,6 +75,21 @@ func JSONEq(
 			"Assertion failed. Expected JSON %s, got %s",
 			expected,
 			actual,
+		)
+	}
+}
+
+func Contains(
+	t *testing.T,
+	container string,
+	substring string,
+) {
+	t.Helper()
+	if !strings.Contains(container, substring) {
+		t.Errorf(
+			"Assertion failed. Expected '%s' to contain '%s'",
+			container,
+			substring,
 		)
 	}
 }

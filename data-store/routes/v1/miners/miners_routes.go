@@ -54,5 +54,4 @@ func CreateMinersRoutes(
 			})
 		}
 	}
-
 }

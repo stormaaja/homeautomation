@@ -32,6 +32,15 @@ func GetGinEnvironment() string {
 	}
 }
 
+func GetLogFile() string {
+	logFile := os.Getenv("LOG_FILE")
+	if logFile == "" {
+		timeStamp := time.Now().Format("2006-01-02-15-04-05")
+		logFile = fmt.Sprintf("data-store-log-%s.log", timeStamp)
+	}
+	return logFile
+}
+
 func CreateRoutes(
 	memoryStore store.DataStore,
 	measurementStores []store.MeasurementStore,
@@ -48,7 +57,7 @@ func CreateRoutes(
 	)
 	genericroutes.CreateHealthCheckRoutes(r)
 	dataroutes.CreateGenericDataRoutes(
-		r,
+		&r.RouterGroup,
 		memoryStore,
 		measurementStores,
 	)
@@ -59,6 +68,8 @@ func CreateRoutes(
 		r,
 		minerConfigurationStore,
 		minerStateStore,
+		memoryStore,
+		measurementStores,
 	)
 	return r
 }
@@ -106,7 +117,7 @@ func UpdateMinerStates(
 			}
 
 			localMinerConfig := localConfig.GetMinerConfig(minerId)
-			if minerState.IsMining != isMining && localMinerConfig != nil && localMinerConfig.WakeOnLan && localMinerConfig.MacAddress != "" {
+			if isMining && minerState.IsMining != isMining && localMinerConfig != nil && localMinerConfig.WakeOnLan && localMinerConfig.MacAddress != "" {
 				WakeMiner(localMinerConfig.MacAddress)
 			}
 
@@ -175,6 +186,13 @@ func PollXmrigConfigChanges(
 }
 
 func main() {
+	logFile, err := os.OpenFile(GetLogFile(), os.O_CREATE|os.O_WRONLY|os.O_APPEND, 0666)
+	if err != nil {
+		log.Fatalf("Error opening log file: %v", err)
+		return
+	}
+	log.SetOutput(logFile)
+
 	if err := godotenv.Load(); err != nil {
 		log.Fatalf("Error loading environment variables: %v", err)
 		return
