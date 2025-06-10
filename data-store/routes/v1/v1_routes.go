@@ -1,6 +1,7 @@
 package v1
 
 import (
+	"stormaaja/go-ha/data-store/dataroutes"
 	"stormaaja/go-ha/data-store/routes/v1/miners"
 	"stormaaja/go-ha/data-store/routes/v1/shelly"
 	"stormaaja/go-ha/data-store/store"
@@ -19,5 +20,10 @@ func CreateV1Routes(
 	{
 		miners.CreateMinersRoutes(group, configurationStore, stateStore)
 		shelly.CreateShellyRoutes(group, memoryStore, measurementStores)
+		dataroutes.CreateGenericDataRoutes(
+			group,
+			memoryStore,
+			measurementStores,
+		)
 	}
 }

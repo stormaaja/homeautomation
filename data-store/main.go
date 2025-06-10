@@ -48,7 +48,7 @@ func CreateRoutes(
 	)
 	genericroutes.CreateHealthCheckRoutes(r)
 	dataroutes.CreateGenericDataRoutes(
-		r,
+		&r.RouterGroup,
 		memoryStore,
 		measurementStores,
 	)
@@ -59,6 +59,8 @@ func CreateRoutes(
 		r,
 		minerConfigurationStore,
 		minerStateStore,
+		memoryStore,
+		measurementStores,
 	)
 	return r
 }

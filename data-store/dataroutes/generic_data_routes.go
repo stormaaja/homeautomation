@@ -12,13 +12,12 @@ import (
 )
 
 func CreateGenericDataRoutes(
-	g *gin.Engine,
+	g *gin.RouterGroup,
 	datastore store.DataStore,
 	measurementStores []store.MeasurementStore,
 ) {
 	group := g.Group("/data/:measurement/:id/:field")
 	{
-		group.Use(middleware.TokenCheck())
 		group.Use(middleware.MeasurementTypeValidator())
 
 		group.GET("", func(c *gin.Context) {
@@ -41,7 +40,7 @@ func CreateGenericDataRoutes(
 			c.String(http.StatusOK, valueString)
 		})
 
-		group.POST("", func(c *gin.Context) {
+		group.POST("", middleware.TokenCheck(), func(c *gin.Context) {
 			measurementType := c.Param("measurement")
 			deviceId := c.Param("id")
 			field := c.Param("field")
