@@ -48,7 +48,7 @@ func TestReportValues_MissingTemperature(t *testing.T) {
 	router.ServeHTTP(w, req)
 
 	assert.Equal(t, http.StatusBadRequest, w.Code)
-	assert.Contains(t, w.Body.String(), "Missing temperature")
+	assert.Contains(t, w.Body.String(), "missing temperature")
 }
 
 func TestReportValues_InvalidTemperature(t *testing.T) {
@@ -68,5 +68,5 @@ func TestReportValues_InvalidTemperature(t *testing.T) {
 	router.ServeHTTP(w, req)
 
 	assert.Equal(t, http.StatusBadRequest, w.Code)
-	assert.Contains(t, w.Body.String(), "Invalid temperature value")
+	assert.Contains(t, w.Body.String(), "invalid value for temperature: notanumber")
 }
