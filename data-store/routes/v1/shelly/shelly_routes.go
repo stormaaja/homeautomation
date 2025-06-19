@@ -1,6 +1,7 @@
 package shelly
 
 import (
+	"fmt"
 	"log"
 	"net/http"
 	"stormaaja/go-ha/data-store/store"
@@ -8,6 +9,47 @@ import (
 
 	"github.com/gin-gonic/gin"
 )
+
+func StoreTemperature(
+	datastore store.DataStore,
+	measurementStores []store.MeasurementStore,
+	deviceId string,
+	valueStr string,
+	valueType string,
+) error {
+	if valueStr == "" {
+		return fmt.Errorf("missing %s", valueType)
+	}
+
+	value, err := strconv.ParseFloat(valueStr, 64)
+	if err != nil {
+		return fmt.Errorf("invalid value for %s: %s", valueType, valueStr)
+	}
+
+	measurement := store.Measurement{
+		DeviceId:        deviceId,
+		MeasurementType: valueType,
+		Field:           valueType,
+		Value:           value,
+	}
+
+	datastore.SetMeasurement(
+		measurement.MeasurementType,
+		deviceId,
+		measurement,
+	)
+
+	for _, measurementStore := range measurementStores {
+		log.Printf("Storing value %f for device %s", measurement.Value, measurement.DeviceId)
+		measurementStore.AppendItem(
+			measurement.MeasurementType,
+			deviceId,
+			measurement.Field,
+			value,
+		)
+	}
+	return nil
+}
 
 func CreateShellyRoutes(
 	g *gin.RouterGroup,
@@ -24,39 +66,11 @@ func CreateShellyRoutes(
 				deviceId := c.Param("id")
 				temperature := c.Query("temp")
 
-				if temperature == "" {
-					c.JSON(http.StatusBadRequest, gin.H{"error": "Missing temperature"})
-					return
-				}
-
-				value, err := strconv.ParseFloat(temperature, 64)
+				err := StoreTemperature(datastore, measurementStores, deviceId, temperature, "temperature")
 				if err != nil {
-					c.JSON(http.StatusBadRequest, gin.H{"error": "Invalid temperature value"})
-					return
+					c.JSON(http.StatusBadRequest, gin.H{"error": err.Error()})
 				}
 
-				temperatureMeasurement := store.Measurement{
-					DeviceId:        deviceId,
-					MeasurementType: "temperature",
-					Field:           "temperature",
-					Value:           value,
-				}
-
-				datastore.SetMeasurement(
-					temperatureMeasurement.MeasurementType,
-					deviceId,
-					temperatureMeasurement,
-				)
-
-				for _, measurementStore := range measurementStores {
-					log.Printf("Storing value %f for device %s", temperatureMeasurement.Value, temperatureMeasurement.DeviceId)
-					measurementStore.AppendItem(
-						temperatureMeasurement.MeasurementType,
-						deviceId,
-						temperatureMeasurement.Field,
-						value,
-					)
-				}
 				c.Status(http.StatusCreated)
 			})
 		}
