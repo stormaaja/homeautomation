@@ -76,10 +76,14 @@ func (mss *MinerStateStore) Clear() {
 	}
 }
 
-func (mss *MinerStateStore) GetIds() []string {
-	ids := make([]string, 0, len(mss.States))
-	for id := range mss.States {
-		ids = append(ids, id)
+func Keys(states map[string]MinerState) []string {
+	keys := make([]string, 0, len(states))
+	for key := range states {
+		keys = append(keys, key)
 	}
-	return ids
+	return keys
+}
+
+func (mss *MinerStateStore) GetIds() []string {
+	return Keys(mss.States)
 }
