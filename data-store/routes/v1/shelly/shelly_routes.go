@@ -11,7 +11,7 @@ import (
 )
 
 func StoreTemperature(
-	datastore store.DataStore,
+	memoryStore *store.MemoryStore,
 	measurementStores []store.MeasurementStore,
 	deviceId string,
 	valueStr string,
@@ -33,7 +33,7 @@ func StoreTemperature(
 		Value:           value,
 	}
 
-	datastore.SetMeasurement(
+	memoryStore.SetMeasurement(
 		measurement.MeasurementType,
 		deviceId,
 		measurement,
@@ -53,7 +53,7 @@ func StoreTemperature(
 
 func CreateShellyRoutes(
 	g *gin.RouterGroup,
-	datastore store.DataStore,
+	memoryStore *store.MemoryStore,
 	measurementStores []store.MeasurementStore,
 ) {
 	// /v1/shelly/ht/shellyhtdownstairs1?hum=36&temp=25.12&id=shellyht-3C63BB
@@ -66,7 +66,7 @@ func CreateShellyRoutes(
 				deviceId := c.Param("id")
 				temperature := c.Query("temp")
 
-				err := StoreTemperature(datastore, measurementStores, deviceId, temperature, "temperature")
+				err := StoreTemperature(memoryStore, measurementStores, deviceId, temperature, "temperature")
 				if err != nil {
 					c.JSON(http.StatusBadRequest, gin.H{"error": err.Error()})
 				}
