@@ -13,19 +13,19 @@ import (
 func TestReportValues_Success(t *testing.T) {
 	gin.SetMode(gin.TestMode)
 	router := gin.New()
-	dataStore := store.MemoryStore{
+	memoryStore := store.MemoryStore{
 		Data: make(map[string]map[string]any),
 	}
 	measurementStore := store.MockMeasurementStore{
 		Items: make(map[string]float64),
 	}
 
-	CreateShellyRoutes(router.Group("/v1"), dataStore, []store.MeasurementStore{&measurementStore})
+	CreateShellyRoutes(router.Group("/v1"), &memoryStore, []store.MeasurementStore{&measurementStore})
 
 	req, _ := http.NewRequest("GET", "/v1/shelly/ht/test-device/report-values?temp=23.5", nil)
 	w := httptest.NewRecorder()
 	router.ServeHTTP(w, req)
-	measurement := dataStore.Data["test-device"]["temperature"].(store.Measurement)
+	measurement := memoryStore.Data["test-device"]["temperature"].(store.Measurement)
 	assert.Equal(t, http.StatusCreated, w.Code)
 	assert.Equal(t, "test-device", measurement.DeviceId)
 	assert.Equal(t, 23.5, measurement.Value)
@@ -34,14 +34,14 @@ func TestReportValues_Success(t *testing.T) {
 func TestReportValues_MissingTemperature(t *testing.T) {
 	gin.SetMode(gin.TestMode)
 	router := gin.New()
-	dataStore := store.MemoryStore{
+	memoryStore := store.MemoryStore{
 		Data: make(map[string]map[string]any),
 	}
 	measurementStore := store.MockMeasurementStore{
 		Items: make(map[string]float64),
 	}
 
-	CreateShellyRoutes(router.Group("/v1"), dataStore, []store.MeasurementStore{&measurementStore})
+	CreateShellyRoutes(router.Group("/v1"), &memoryStore, []store.MeasurementStore{&measurementStore})
 
 	req, _ := http.NewRequest("GET", "/v1/shelly/ht/test-device/report-values", nil)
 	w := httptest.NewRecorder()
@@ -54,14 +54,14 @@ func TestReportValues_MissingTemperature(t *testing.T) {
 func TestReportValues_InvalidTemperature(t *testing.T) {
 	gin.SetMode(gin.TestMode)
 	router := gin.New()
-	dataStore := store.MemoryStore{
+	memoryStore := store.MemoryStore{
 		Data: make(map[string]map[string]any),
 	}
 	measurementStore := store.MockMeasurementStore{
 		Items: make(map[string]float64),
 	}
 
-	CreateShellyRoutes(router.Group("/v1"), dataStore, []store.MeasurementStore{&measurementStore})
+	CreateShellyRoutes(router.Group("/v1"), &memoryStore, []store.MeasurementStore{&measurementStore})
 
 	req, _ := http.NewRequest("GET", "/v1/shelly/ht/test-device/report-values?temp=notanumber", nil)
 	w := httptest.NewRecorder()

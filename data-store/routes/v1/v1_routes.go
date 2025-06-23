@@ -13,7 +13,7 @@ func CreateV1Routes(
 	g *gin.Engine,
 	configurationStore *store.GenericStore,
 	stateStore *store.MinerStateStore,
-	memoryStore store.DataStore,
+	memoryStore *store.MemoryStore,
 	measurementStores []store.MeasurementStore,
 ) {
 	group := g.Group("/v1")

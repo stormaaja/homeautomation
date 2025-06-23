@@ -42,7 +42,7 @@ func GetLogFile() string {
 }
 
 func CreateRoutes(
-	memoryStore store.DataStore,
+	memoryStore *store.MemoryStore,
 	measurementStores []store.MeasurementStore,
 	spotPriceApiClient *spot.SpotHintaApiClient,
 	minerStateStore *store.MinerStateStore,

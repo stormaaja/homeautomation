@@ -16,17 +16,17 @@ func TestCreateGenericDataRoutes(t *testing.T) {
 	os.Setenv("API_TOKEN", "valid-token")
 	gin.SetMode(gin.TestMode)
 	router := gin.Default()
-	mockDataStore := store.MemoryStore{
+	memoryStore := store.MemoryStore{
 		Data: make(map[string]map[string]any),
 	}
 	mockMeasurementStore := store.MockMeasurementStore{
 		Items: make(map[string]float64),
 	}
 	measurementStores := []store.MeasurementStore{&mockMeasurementStore}
-	CreateGenericDataRoutes(&router.RouterGroup, mockDataStore, measurementStores)
+	CreateGenericDataRoutes(&router.RouterGroup, &memoryStore, measurementStores)
 
 	t.Run("GET /data/:measurement/:id/:field - success", func(t *testing.T) {
-		mockDataStore.SetMeasurement("electricity_consumption", "device1", store.Measurement{
+		memoryStore.SetMeasurement("electricity_consumption", "device1", store.Measurement{
 			DeviceId:        "device1",
 			MeasurementType: "electricity_consumption",
 			Field:           "energy",
@@ -60,7 +60,7 @@ func TestCreateGenericDataRoutes(t *testing.T) {
 
 		assert.Equal(t, http.StatusCreated, resp.Code)
 		assert.Equal(t, 30.5, mockMeasurementStore.Items["device2"])
-		assert.Equal(t, 30.5, mockDataStore.Data["device2"]["temperature"].(store.Measurement).Value)
+		assert.Equal(t, 30.5, memoryStore.Data["device2"]["temperature"].(store.Measurement).Value)
 	})
 
 	t.Run("POST /data/:measurement/:id/:field - invalid body", func(t *testing.T) {

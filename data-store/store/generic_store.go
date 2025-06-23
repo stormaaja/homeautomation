@@ -28,7 +28,7 @@ func (gs *GenericStore) Load() error {
 	return tools.ReadJsonFile(gs.FilePath, &gs.Values)
 }
 
-func (gs *GenericStore) Save() error {
+func (gs GenericStore) Save() error {
 	err := tools.WriteJsonFile(gs.FilePath, gs.Values)
 	if err != nil {
 		return fmt.Errorf("failed to save store: %w", err)
@@ -36,7 +36,7 @@ func (gs *GenericStore) Save() error {
 	return nil
 }
 
-func (gs *GenericStore) GetValue(key string) (any, error) {
+func (gs GenericStore) GetValue(key string) (any, error) {
 	value, exists := gs.Values[key]
 	if !exists {
 		return nil, fmt.Errorf("value not found")
@@ -52,7 +52,7 @@ func (gs *GenericStore) SetValue(key string, value any) {
 	}
 }
 
-func (gs *GenericStore) ContainsValue(key string) bool {
+func (gs GenericStore) ContainsValue(key string) bool {
 	_, exists := gs.Values[key]
 	return exists
 }
@@ -65,12 +65,16 @@ func (gs *GenericStore) DeleteValue(key string) {
 	}
 }
 
-func (gs *GenericStore) GetIds() []string {
-	ids := make([]string, 0, len(gs.Values))
-	for id := range gs.Values {
-		ids = append(ids, id)
+func StoreKeys(states map[string]any) []string {
+	keys := make([]string, 0, len(states))
+	for key := range states {
+		keys = append(keys, key)
 	}
-	return ids
+	return keys
+}
+
+func (gs GenericStore) GetIds() []string {
+	return StoreKeys(gs.Values)
 }
 
 func (gs *GenericStore) Clear() {

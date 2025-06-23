@@ -13,7 +13,7 @@ import (
 
 func CreateGenericDataRoutes(
 	g *gin.RouterGroup,
-	datastore store.DataStore,
+	memoryStore *store.MemoryStore,
 	measurementStores []store.MeasurementStore,
 ) {
 	group := g.Group("/data/:measurement/:id/:field")
@@ -24,7 +24,7 @@ func CreateGenericDataRoutes(
 			measurementType := c.Param("measurement")
 			deviceId := c.Param("id")
 			field := c.Param("field")
-			measurement, success := datastore.GetMeasurement(measurementType, deviceId)
+			measurement, success := memoryStore.GetMeasurement(measurementType, deviceId)
 			if !success {
 				c.AbortWithError(http.StatusBadRequest, fmt.Errorf("device or measurement type not found"))
 				return
@@ -58,7 +58,7 @@ func CreateGenericDataRoutes(
 				Value:           value,
 			}
 
-			datastore.SetMeasurement(
+			memoryStore.SetMeasurement(
 				measurementType,
 				deviceId,
 				measurement,
