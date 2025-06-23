@@ -35,7 +35,7 @@ func NewInfluxDBClient() *InfluxDBClient {
 	}
 }
 
-func (c *InfluxDBClient) AppendItem(
+func (ic *InfluxDBClient) AppendItem(
 	measurement string,
 	location string,
 	field string,
@@ -49,13 +49,13 @@ func (c *InfluxDBClient) AppendItem(
 		"time":        time.Now(),
 	}
 
-	c.Data = append(c.Data, data)
+	ic.Data = append(ic.Data, data)
 }
 
-func (i *InfluxDBClient) Flush() {
-	writeAPI := i.Client.WriteAPI(i.Organization, i.Bucket)
+func (ic *InfluxDBClient) Flush() {
+	writeAPI := ic.Client.WriteAPI(ic.Organization, ic.Bucket)
 
-	for _, item := range i.Data {
+	for _, item := range ic.Data {
 		p := influxdb2.NewPointWithMeasurement(item["measurement"].(string)).
 			SetTime(time.Now()).
 			AddTag("location", item["location"].(string)).
