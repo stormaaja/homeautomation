@@ -64,6 +64,6 @@ jobs:
         version_str=$(perl -nle 'print $1 if /Version = "([^"]+)"/' "version.go")
         file="$HOME/${{ steps.build_step.outputs.file }}"
         echo "Creating a new release for version $version_str"
-        gh release create "v${version_str}" $file --title "Release v${version_str}" --generate-notes data-store/v${version_str} --target main
+        gh release create "v${version_str}" $file --title "Release v${version_str}" --notes-from-tag data-store/v${version_str} --target main
       env:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
