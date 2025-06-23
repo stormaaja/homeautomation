@@ -7,27 +7,47 @@ on:
 
 jobs:
   new_version_release:
-    if: github.event.pull_request.merged == true && startsWith(github.event.pull_request.head.ref, 'misc/version-')
+    if: github.event.pull_request.merged == true
     runs-on: ubuntu-latest
 
     permissions: 
       contents: write
+      pull-requests: write
     steps:
     - uses: actions/checkout@v4
       with:
         fetch-depth: 0
+    
+    - name: Bump Data Store Version
+      working-directory: ./
+      run: scripts/version_bump.bash data-store
+    
+    - name: Push Data Store Version
+      id: push_step
+      working-directory: ./data-store
+      run: |
+        git config --local user.email "github-actions[bot]@users.noreply.github.com"
+        git config --local user.name "github-actions[bot]"
+        version_str=$(perl -nle 'print $1 if /Version = "([^"]+)"/' "version.go")
+        git add version.go
+        git commit -m "[automatic] Data-Store Version ${version_str}"
+        git tag -a -m "[automatic] data-store version ${version_str}" "data-store/v${version_str}"
+        git push origin main
+        git push origin main --tags
+        echo "version_str=$version_str" >> $GITHUB_OUTPUT
+      env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
 
     - name: Build new version for Linux
       id: build_step
       working-directory: ./data-store
       run: |
-        version_str=$(perl -nle 'print $1 if /Version = "([^"]+)"/' "version.go")
+        version_str="${{ steps.build_step.outputs.version_str }}"
         file="data-store-v${version_str}-linux-amd64"
         echo "Building the binary for Linux with version $version_str"
         env GOOS=linux GOARCH=amd64 go build -o $file
         echo "Binary created. Moving it to $HOME"
         mv $file "$HOME/$file"
-        echo "version_str=$version_str" >> $GITHUB_OUTPUT
         echo "file=$file" >> $GITHUB_OUTPUT
     
     - name: Create new release
