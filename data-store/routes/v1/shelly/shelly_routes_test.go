@@ -14,7 +14,7 @@ func TestReportValues_Success(t *testing.T) {
 	gin.SetMode(gin.TestMode)
 	router := gin.New()
 	dataStore := store.MemoryStore{
-		Data: make(map[string]map[string]interface{}),
+		Data: make(map[string]map[string]any),
 	}
 	measurementStore := store.MockMeasurementStore{
 		Items: make(map[string]float64),
@@ -35,7 +35,7 @@ func TestReportValues_MissingTemperature(t *testing.T) {
 	gin.SetMode(gin.TestMode)
 	router := gin.New()
 	dataStore := store.MemoryStore{
-		Data: make(map[string]map[string]interface{}),
+		Data: make(map[string]map[string]any),
 	}
 	measurementStore := store.MockMeasurementStore{
 		Items: make(map[string]float64),
@@ -55,7 +55,7 @@ func TestReportValues_InvalidTemperature(t *testing.T) {
 	gin.SetMode(gin.TestMode)
 	router := gin.New()
 	dataStore := store.MemoryStore{
-		Data: make(map[string]map[string]interface{}),
+		Data: make(map[string]map[string]any),
 	}
 	measurementStore := store.MockMeasurementStore{
 		Items: make(map[string]float64),

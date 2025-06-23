@@ -34,7 +34,7 @@ func TestGetGinEnvironment(t *testing.T) {
 func TestInvalidToken(t *testing.T) {
 	gin.SetMode(gin.TestMode)
 	os.Setenv("API_TOKEN", "valid-token")
-	memoryStore := store.MemoryStore{Data: make(map[string]map[string]interface{})}
+	memoryStore := store.MemoryStore{Data: make(map[string]map[string]any)}
 
 	router := CreateRoutes(
 		&memoryStore,
@@ -57,7 +57,7 @@ func TestInvalidToken(t *testing.T) {
 func TestValidToken(t *testing.T) {
 	gin.SetMode(gin.TestMode)
 	os.Setenv("API_TOKEN", "valid-token")
-	memoryStore := store.MemoryStore{Data: make(map[string]map[string]interface{})}
+	memoryStore := store.MemoryStore{Data: make(map[string]map[string]any)}
 	memoryStore.SetMeasurement("temperature", "device-id", store.Measurement{
 		DeviceId:        "device-id",
 		MeasurementType: "temperature",

@@ -214,7 +214,7 @@ func main() {
 	}
 	var influxDbClient = store.NewInfluxDBClient()
 	var memoryStore = store.MemoryStore{
-		Data: make(map[string]map[string]interface{}),
+		Data: make(map[string]map[string]any),
 	}
 	var measurementStores = []store.MeasurementStore{}
 	if influxDbClient != nil {

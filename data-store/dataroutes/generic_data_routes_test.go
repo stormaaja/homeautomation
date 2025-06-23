@@ -17,7 +17,7 @@ func TestCreateGenericDataRoutes(t *testing.T) {
 	gin.SetMode(gin.TestMode)
 	router := gin.Default()
 	mockDataStore := store.MemoryStore{
-		Data: make(map[string]map[string]interface{}),
+		Data: make(map[string]map[string]any),
 	}
 	mockMeasurementStore := store.MockMeasurementStore{
 		Items: make(map[string]float64),

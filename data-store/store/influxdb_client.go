@@ -10,7 +10,7 @@ import (
 
 type InfluxDBClient struct {
 	Client       influxdb2.Client
-	Data         []map[string]interface{}
+	Data         []map[string]any
 	Bucket       string
 	Organization string
 }
@@ -29,7 +29,7 @@ func NewInfluxDBClient() *InfluxDBClient {
 			token,
 			influxdb2.DefaultOptions().SetBatchSize(20),
 		),
-		Data:         []map[string]interface{}{},
+		Data:         []map[string]any{},
 		Bucket:       bucket,
 		Organization: os.Getenv("INFLUXDB_URL_ORGANIZATION"),
 	}
@@ -41,7 +41,7 @@ func (c *InfluxDBClient) AppendItem(
 	field string,
 	value float64,
 ) {
-	data := map[string]interface{}{
+	data := map[string]any{
 		"measurement": measurement,
 		"location":    location,
 		"field":       field,
@@ -64,6 +64,6 @@ func (i *InfluxDBClient) Flush() {
 	}
 
 	writeAPI.Flush()
-	i.Client.Close()
-	i.Data = []map[string]interface{}{}
+	ic.Client.Close()
+	ic.Data = []map[string]any{}
 }

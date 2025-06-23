@@ -33,8 +33,8 @@ func False(
 
 func Equal(
 	t *testing.T,
-	expected interface{},
-	actual interface{},
+	expected any,
+	actual any,
 ) {
 	t.Helper()
 	if expected != actual {
@@ -52,8 +52,8 @@ func JSONEq(
 	actual string,
 ) {
 	t.Helper()
-	parsedTarget := map[string]interface{}{}
-	parsedActual := map[string]interface{}{}
+	parsedTarget := map[string]any{}
+	parsedActual := map[string]any{}
 	err := json.Unmarshal([]byte(expected), &parsedTarget)
 	if err != nil {
 		t.Errorf(
