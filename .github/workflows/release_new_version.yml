@@ -22,6 +22,16 @@ jobs:
       working-directory: ./
       run: scripts/version_bump.bash data-store
     
+    - name: Set up SSH
+      id: setup_ssh
+      working-directory: ./
+      run: |
+        mkdir -p ~/.ssh
+        echo "${{ secrets.ACTIONS_DEPLOY_KEY }}" > ~/.ssh/id_ed25519
+        chmod 600 ~/.ssh/id_ed25519
+        ssh-keyscan github.com >> ~/.ssh/known_hosts
+        git config --global url."git@github.com:".insteadOf "https://github.com/"
+
     - name: Push Data Store Version
       id: push_step
       working-directory: ./data-store
@@ -35,8 +45,6 @@ jobs:
         git push origin main
         git push origin main --tags
         echo "version_str=$version_str" >> $GITHUB_OUTPUT
-      env:
-          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
 
     - name: Build new version for Linux
       id: build_step
