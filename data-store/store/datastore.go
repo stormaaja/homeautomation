@@ -4,7 +4,7 @@ type Measurement struct {
 	DeviceId        string
 	MeasurementType string
 	Field           string
-	Value           interface{}
+	Value           any
 }
 
 type DataStore interface {
