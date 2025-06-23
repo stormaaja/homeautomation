@@ -44,13 +44,12 @@ jobs:
         git tag -a -m "[automatic] data-store version ${version_str}" "data-store/v${version_str}"
         git push origin main
         git push origin main --tags
-        echo "version_str=$version_str" >> $GITHUB_OUTPUT
 
     - name: Build new version for Linux
       id: build_step
       working-directory: ./data-store
       run: |
-        version_str="${{ steps.build_step.outputs.version_str }}"
+        version_str=$(perl -nle 'print $1 if /Version = "([^"]+)"/' "version.go")
         file="data-store-v${version_str}-linux-amd64"
         echo "Building the binary for Linux with version $version_str"
         env GOOS=linux GOARCH=amd64 go build -o $file
@@ -62,7 +61,7 @@ jobs:
       id: release_step
       working-directory: ./data-store
       run: |
-        version_str="${{ steps.build_step.outputs.version_str }}"
+        version_str=$(perl -nle 'print $1 if /Version = "([^"]+)"/' "version.go")
         file="$HOME/${{ steps.build_step.outputs.file }}"
         echo "Creating a new release for version $version_str"
         gh release create "v${version_str}" $file --title "Release v${version_str}" --generate-notes ${version_str} --target main
