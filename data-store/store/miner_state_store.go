@@ -39,7 +39,7 @@ func (mss *MinerStateStore) Save() error {
 	return nil
 }
 
-func (mss *MinerStateStore) GetValue(key string) (MinerState, error) {
+func (mss MinerStateStore) GetValue(key string) (MinerState, error) {
 	value, exists := mss.States[key]
 	if !exists {
 		return MinerState{}, fmt.Errorf("value not found")
@@ -55,7 +55,7 @@ func (mss *MinerStateStore) SetValue(key string, value MinerState) {
 	}
 }
 
-func (mss *MinerStateStore) ContainsValue(key string) bool {
+func (mss MinerStateStore) ContainsValue(key string) bool {
 	_, exists := mss.States[key]
 	return exists
 }
@@ -84,6 +84,6 @@ func Keys(states map[string]MinerState) []string {
 	return keys
 }
 
-func (mss *MinerStateStore) GetIds() []string {
+func (mss MinerStateStore) GetIds() []string {
 	return Keys(mss.States)
 }
