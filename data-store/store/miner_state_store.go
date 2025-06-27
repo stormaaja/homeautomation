@@ -3,6 +3,7 @@ package store
 import (
 	"fmt"
 	"stormaaja/go-ha/data-store/tools"
+	"sync"
 	"time"
 )
 
@@ -12,27 +13,57 @@ type MinerState struct {
 	LastConfigChanged time.Time
 }
 
-type MinerStateStore struct {
+type SaveableMinerStateStore struct {
 	States map[string]MinerState
+}
+
+type MinerStateStore struct {
+	MinerStates *sync.Map
 }
 
 func CreateMinerStateStore() MinerStateStore {
 	store := MinerStateStore{
-		States: make(map[string]MinerState),
+		MinerStates: new(sync.Map),
 	}
-	err := store.Load()
-	if err != nil {
-		fmt.Printf("failed to read miner state store file: %v\n", err)
-	}
+	store.Load()
 	return store
 }
 
 func (mss *MinerStateStore) Load() error {
-	return tools.ReadJsonFile("miner_state.json", mss)
+	saveableState := SaveableMinerStateStore{
+		States: make(map[string]MinerState),
+	}
+	err := saveableState.Load()
+	if err != nil {
+		return err
+	}
+	mss.Clear()
+	for key, state := range saveableState.States {
+		mss.MinerStates.Store(key, state)
+	}
+	return nil
+}
+
+func (smss *SaveableMinerStateStore) Load() error {
+	return tools.ReadJsonFile("miner_state.json", smss)
+}
+
+func (mss MinerStateStore) ToSaveable() *SaveableMinerStateStore {
+	states := make(map[string]MinerState)
+	mss.MinerStates.Range(func(key, value interface{}) bool {
+		if minerState, ok := value.(MinerState); ok {
+			states[key.(string)] = minerState
+		}
+		return true
+	})
+	return &SaveableMinerStateStore{
+		States: states,
+	}
 }
 
 func (mss *MinerStateStore) Save() error {
-	err := tools.WriteJsonFile("miner_state.json", mss)
+	saveableState := mss.ToSaveable()
+	err := tools.WriteJsonFile("miner_state.json", saveableState)
 	if err != nil {
 		return fmt.Errorf("failed to save miner state store: %w", err)
 	}
@@ -40,15 +71,18 @@ func (mss *MinerStateStore) Save() error {
 }
 
 func (mss MinerStateStore) GetValue(key string) (MinerState, error) {
-	value, exists := mss.States[key]
+	value, exists := mss.MinerStates.Load(key)
 	if !exists {
 		return MinerState{}, fmt.Errorf("value not found")
 	}
-	return value, nil
+	if minerState, ok := value.(MinerState); ok {
+		return minerState, nil
+	}
+	return MinerState{}, fmt.Errorf("value is not of type MinerState")
 }
 
 func (mss *MinerStateStore) SetValue(key string, value MinerState) {
-	mss.States[key] = value
+	mss.MinerStates.Store(key, value)
 	err := mss.Save()
 	if err != nil {
 		fmt.Printf("failed to save miner state store after setting value: %v\n", err)
@@ -56,12 +90,12 @@ func (mss *MinerStateStore) SetValue(key string, value MinerState) {
 }
 
 func (mss MinerStateStore) ContainsValue(key string) bool {
-	_, exists := mss.States[key]
+	_, exists := mss.MinerStates.Load(key)
 	return exists
 }
 
 func (mss *MinerStateStore) DeleteValue(key string) {
-	delete(mss.States, key)
+	mss.MinerStates.Delete(key)
 	err := mss.Save()
 	if err != nil {
 		fmt.Printf("failed to save miner state store after deleting value: %v\n", err)
@@ -69,21 +103,22 @@ func (mss *MinerStateStore) DeleteValue(key string) {
 }
 
 func (mss *MinerStateStore) Clear() {
-	mss.States = make(map[string]MinerState)
+	mss.MinerStates.Clear()
 	err := mss.Save()
 	if err != nil {
 		fmt.Printf("failed to save miner state store after clearing: %v\n", err)
 	}
 }
 
-func Keys(states map[string]MinerState) []string {
-	keys := make([]string, 0, len(states))
-	for key := range states {
-		keys = append(keys, key)
-	}
+func Keys(states *sync.Map) []string {
+	keys := make([]string, 0)
+	states.Range(func(key, _ interface{}) bool {
+		keys = append(keys, key.(string))
+		return true
+	})
 	return keys
 }
 
 func (mss MinerStateStore) GetIds() []string {
-	return Keys(mss.States)
+	return Keys(mss.MinerStates)
 }
