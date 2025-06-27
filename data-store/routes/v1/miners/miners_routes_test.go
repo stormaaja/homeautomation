@@ -3,6 +3,7 @@ package miners
 import (
 	"net/http"
 	"net/http/httptest"
+	"sync"
 	"testing"
 
 	"stormaaja/go-ha/data-store/store"
@@ -52,13 +53,16 @@ func TestCreateMinersRoutes(t *testing.T) {
 	t.Run("GET /miners/:id/state - Success", func(t *testing.T) {
 		router := gin.Default()
 		mockStateStore := &store.MinerStateStore{
-			States: map[string]store.MinerState{
-				"1": {
-					DeviceId: "1",
-					IsMining: true,
-				},
-			},
+			MinerStates: new(sync.Map),
 		}
+		mockStateStore.MinerStates.Store(
+			"1",
+			store.MinerState{
+				DeviceId: "1",
+				IsMining: true,
+			},
+		)
+
 		mockConfigStore := &store.GenericStore{}
 		CreateMinersRoutes(router.Group("/v1"), mockConfigStore, mockStateStore)
 
@@ -72,7 +76,9 @@ func TestCreateMinersRoutes(t *testing.T) {
 
 	t.Run("GET /miners/:id/state - Miner Not Found", func(t *testing.T) {
 		router := gin.Default()
-		mockStateStore := &store.MinerStateStore{}
+		mockStateStore := &store.MinerStateStore{
+			MinerStates: new(sync.Map),
+		}
 		mockConfigStore := &store.GenericStore{}
 		CreateMinersRoutes(router.Group("/v1"), mockConfigStore, mockStateStore)
 
