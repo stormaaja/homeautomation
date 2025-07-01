@@ -12,15 +12,17 @@ type MinerLocalConfig struct {
 }
 
 type LocalConfig struct {
-	MaxSpotPriceForMining float64
-	Miners                []MinerLocalConfig
-	Hash                  []byte
+	MaxSpotPriceForMining   float64
+	MaxTemperatureForMining float64
+	Miners                  []MinerLocalConfig
+	Hash                    []byte
 }
 
 func CreateLocalConfig() LocalConfig {
 	config := LocalConfig{
-		MaxSpotPriceForMining: 0.0,
-		Hash:                  []byte{},
+		MaxSpotPriceForMining:   0.0,
+		MaxTemperatureForMining: 0.0,
+		Hash:                    []byte{},
 	}
 	err := tools.ReadJsonFile("local_config.json", &config)
 	if err != nil {

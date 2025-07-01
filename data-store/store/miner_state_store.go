@@ -8,9 +8,12 @@ import (
 )
 
 type MinerState struct {
-	DeviceId          string
-	IsMining          bool
-	LastConfigChanged time.Time
+	DeviceId            string
+	IsMining            bool // Deprecated
+	LastConfigChanged   time.Time
+	SpotPriceLimit      float64
+	TemperatureLimit    float64
+	TemperatureSensorId string
 }
 
 type SaveableMinerStateStore struct {
