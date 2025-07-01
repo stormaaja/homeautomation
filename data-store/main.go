@@ -117,32 +117,24 @@ func UpdateMinerStates(
 			}
 
 			localMinerConfig := localConfig.GetMinerConfig(minerId)
-			if isMining && minerState.IsMining != isMining && localMinerConfig != nil && localMinerConfig.WakeOnLan && localMinerConfig.MacAddress != "" {
+			if isMining && localMinerConfig != nil && localMinerConfig.WakeOnLan && localMinerConfig.MacAddress != "" {
 				WakeMiner(localMinerConfig.MacAddress)
 			}
 
-			minerState.IsMining = isMining
+			minerState.SpotPriceLimit = localConfig.MaxSpotPriceForMining
+			minerState.TemperatureLimit = localConfig.MaxTemperatureForMining
 			minerStateStore.SetValue(minerId, minerState)
 		}
 	}
 }
 
 func SetMinerStates(localConfig *configuration.LocalConfig, minerStateStore *store.MinerStateStore) {
-	minerIds := minerStateStore.GetIds()
-	lastState := store.MinerState{IsMining: true}
-	if len(minerIds) > 0 {
-		lastStateFromStore, err := minerStateStore.GetValue(minerIds[0])
-		if err != nil {
-			log.Printf("Error getting last state: %v", err)
-		} else {
-			lastState = lastStateFromStore
-		}
-	}
 	minerStateStore.Clear()
 	for _, minerLocalConfig := range localConfig.Miners {
 		minerState := store.MinerState{
-			DeviceId: minerLocalConfig.MinerId,
-			IsMining: lastState.IsMining,
+			DeviceId:         minerLocalConfig.MinerId,
+			SpotPriceLimit:   localConfig.MaxSpotPriceForMining,
+			TemperatureLimit: localConfig.MaxTemperatureForMining,
 		}
 		minerStateStore.SetValue(minerLocalConfig.MinerId, minerState)
 	}
