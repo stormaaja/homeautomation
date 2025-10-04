@@ -42,6 +42,23 @@ func TestCreateGenericDataRoutes(t *testing.T) {
 		assert.Equal(t, "25.500000", resp.Body.String())
 	})
 
+	t.Run("GET /data/:measurement/:id/:field?format=full - success", func(t *testing.T) {
+		memoryStore.SetMeasurement("electricity_consumption", "device1", store.Measurement{
+			DeviceId:        "device1",
+			MeasurementType: "electricity_consumption",
+			Field:           "energy",
+			Value:           25.5,
+		})
+
+		req, _ := http.NewRequest(http.MethodGet, "/data/electricity_consumption/device1/energy?format=full", nil)
+		req.Header.Add("Authorization", "Bearer valid-token")
+		resp := httptest.NewRecorder()
+		router.ServeHTTP(resp, req)
+
+		assert.Equal(t, http.StatusOK, resp.Code)
+		assert.JSONEq(t, "{\"DeviceId\":\"device1\",\"MeasurementType\":\"electricity_consumption\",\"Field\":\"energy\",\"Value\":25.5,\"UpdatedAt\":\"0001-01-01T00:00:00Z\"}", resp.Body.String())
+	})
+
 	t.Run("GET /data/:measurement/:id/:field - device not found", func(t *testing.T) {
 		req, _ := http.NewRequest(http.MethodGet, "/data/temperature/device2/temperature", nil)
 		req.Header.Add("Authorization", "Bearer valid-token")
