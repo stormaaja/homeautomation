@@ -46,6 +46,41 @@ func Equal(
 	}
 }
 
+func JSONArrayEq(
+	t *testing.T,
+	expected string,
+	actual string,
+) {
+	t.Helper()
+	parsedTarget := []map[string]any{}
+	parsedActual := []map[string]any{}
+	err := json.Unmarshal([]byte(expected), &parsedTarget)
+	if err != nil {
+		t.Errorf(
+			"Failed to parse expected JSON: %v",
+			err,
+		)
+		return
+	}
+	err = json.Unmarshal([]byte(actual), &parsedActual)
+	if err != nil {
+		t.Errorf(
+			"Failed to parse actual JSON: %v",
+			err,
+		)
+		return
+	}
+	for i, item := range parsedTarget {
+		if !maps.Equal(item, parsedActual[i]) {
+			t.Errorf(
+				"Assertion failed. Expected JSON %s, got %s",
+				expected,
+				actual,
+			)
+		}
+	}
+}
+
 func JSONEq(
 	t *testing.T,
 	expected string,
