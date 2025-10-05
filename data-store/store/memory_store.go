@@ -1,14 +1,14 @@
 package store
 
 type MemoryStore struct {
-	Data map[string]map[string]any
+	Data map[string]map[string]Measurement
 }
 
 func (m MemoryStore) GetMeasurement(
 	measurementType string,
 	key string,
 ) (Measurement, bool) {
-	measurement, ok := m.Data[key][measurementType].(Measurement)
+	measurement, ok := m.Data[key][measurementType]
 	return measurement, ok
 }
 
@@ -18,7 +18,7 @@ func (m *MemoryStore) SetMeasurement(
 	measurement Measurement,
 ) {
 	if m.Data[key] == nil {
-		m.Data[key] = make(map[string]any)
+		m.Data[key] = make(map[string]Measurement)
 	}
 	m.Data[key][measurementType] = measurement
 }

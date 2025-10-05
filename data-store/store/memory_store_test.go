@@ -6,7 +6,7 @@ import (
 
 func TestMemoryStore_GetMeasurement(t *testing.T) {
 	store := MemoryStore{
-		Data: map[string]map[string]any{
+		Data: map[string]map[string]Measurement{
 			"key1": {
 				"temperature": Measurement{Value: 23.5},
 			},
@@ -29,7 +29,7 @@ func TestMemoryStore_GetMeasurement(t *testing.T) {
 
 func TestMemoryStore_SetMeasurement(t *testing.T) {
 	store := MemoryStore{
-		Data: make(map[string]map[string]any),
+		Data: make(map[string]map[string]Measurement),
 	}
 
 	measurement := Measurement{Value: 23.5}
