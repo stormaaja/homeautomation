@@ -19,6 +19,21 @@ func CreateGenericDataRoutes(
 ) {
 	dataGroup := g.Group("/data")
 	{
+		dataGroup.GET("", func(c *gin.Context) {
+			queryParams := c.Request.URL.Query()
+			if len(queryParams) == 0 {
+				c.AbortWithError(http.StatusBadRequest, fmt.Errorf("missing query parameters"))
+				return
+			}
+			findParams := make(map[string]string)
+			for key, values := range queryParams {
+				if len(values) > 0 {
+					findParams[key] = values[0]
+				}
+			}
+			measurements := memoryStore.FindMeasurements(findParams)
+			c.JSON(http.StatusOK, measurements)
+		})
 		group := dataGroup.Group("/:measurement/:id/:field")
 		{
 			group.Use(middleware.MeasurementTypeValidator())

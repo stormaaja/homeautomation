@@ -22,3 +22,17 @@ func (m *MemoryStore) SetMeasurement(
 	}
 	m.Data[key][measurementType] = measurement
 }
+
+func (m MemoryStore) FindMeasurements(
+	queryParams map[string]string,
+) []Measurement {
+	measurements := []Measurement{}
+	for _, deviceMeasurements := range m.Data {
+		for _, measurement := range deviceMeasurements {
+			if measurement.Matches(queryParams) {
+				measurements = append(measurements, measurement)
+			}
+		}
+	}
+	return measurements
+}
