@@ -25,6 +25,73 @@ func TestCreateGenericDataRoutes(t *testing.T) {
 	measurementStores := []store.MeasurementStore{&mockMeasurementStore}
 	CreateGenericDataRoutes(&router.RouterGroup, &memoryStore, measurementStores)
 
+	t.Run("GET /data search by one value - success", func(t *testing.T) {
+		memoryStore.SetMeasurement("electricity_consumption", "device1", store.Measurement{
+			DeviceId:        "device1",
+			MeasurementType: "electricity_consumption",
+			Field:           "energy",
+			Value:           25.5,
+		})
+
+		req, _ := http.NewRequest(http.MethodGet, "/data?deviceId=device1", nil)
+		req.Header.Add("Authorization", "Bearer valid-token")
+		resp := httptest.NewRecorder()
+		router.ServeHTTP(resp, req)
+
+		assert.Equal(t, http.StatusOK, resp.Code)
+		assert.JSONArrayEq(t, "[{\"DeviceId\":\"device1\",\"MeasurementType\":\"electricity_consumption\",\"Field\":\"energy\",\"Value\":25.5,\"UpdatedAt\":\"0001-01-01T00:00:00Z\"}]", resp.Body.String())
+	})
+
+	t.Run("GET /data search by multiple values - success", func(t *testing.T) {
+		memoryStore.SetMeasurement("electricity_consumption", "device1", store.Measurement{
+			DeviceId:        "device1",
+			MeasurementType: "electricity_consumption",
+			Field:           "energy",
+			Value:           25.5,
+		})
+
+		req, _ := http.NewRequest(http.MethodGet, "/data?deviceId=device1&measurementType=electricity_consumption", nil)
+		req.Header.Add("Authorization", "Bearer valid-token")
+		resp := httptest.NewRecorder()
+		router.ServeHTTP(resp, req)
+
+		assert.Equal(t, http.StatusOK, resp.Code)
+		assert.JSONArrayEq(t, "[{\"DeviceId\":\"device1\",\"MeasurementType\":\"electricity_consumption\",\"Field\":\"energy\",\"Value\":25.5,\"UpdatedAt\":\"0001-01-01T00:00:00Z\"}]", resp.Body.String())
+	})
+
+	t.Run("GET /data not found if one value is not matching - success", func(t *testing.T) {
+		memoryStore.SetMeasurement("electricity_consumption", "device1", store.Measurement{
+			DeviceId:        "device1",
+			MeasurementType: "electricity_consumption",
+			Field:           "energy",
+			Value:           25.5,
+		})
+
+		req, _ := http.NewRequest(http.MethodGet, "/data?deviceId=device2&measurementType=electricity_consumption", nil)
+		req.Header.Add("Authorization", "Bearer valid-token")
+		resp := httptest.NewRecorder()
+		router.ServeHTTP(resp, req)
+
+		assert.Equal(t, http.StatusOK, resp.Code)
+		assert.JSONArrayEq(t, "[]", resp.Body.String())
+	})
+
+	t.Run("GET /data search query missing - failed", func(t *testing.T) {
+		memoryStore.SetMeasurement("electricity_consumption", "device1", store.Measurement{
+			DeviceId:        "device1",
+			MeasurementType: "electricity_consumption",
+			Field:           "energy",
+			Value:           25.5,
+		})
+
+		req, _ := http.NewRequest(http.MethodGet, "/data", nil)
+		req.Header.Add("Authorization", "Bearer valid-token")
+		resp := httptest.NewRecorder()
+		router.ServeHTTP(resp, req)
+
+		assert.Equal(t, http.StatusBadRequest, resp.Code)
+	})
+
 	t.Run("GET /data/:measurement/:id/:field - success", func(t *testing.T) {
 		memoryStore.SetMeasurement("electricity_consumption", "device1", store.Measurement{
 			DeviceId:        "device1",
