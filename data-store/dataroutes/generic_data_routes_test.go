@@ -17,7 +17,7 @@ func TestCreateGenericDataRoutes(t *testing.T) {
 	gin.SetMode(gin.TestMode)
 	router := gin.Default()
 	memoryStore := store.MemoryStore{
-		Data: make(map[string]map[string]any),
+		Data: make(map[string]map[string]store.Measurement),
 	}
 	mockMeasurementStore := store.MockMeasurementStore{
 		Items: make(map[string]float64),
@@ -77,7 +77,7 @@ func TestCreateGenericDataRoutes(t *testing.T) {
 
 		assert.Equal(t, http.StatusCreated, resp.Code)
 		assert.Equal(t, 30.5, mockMeasurementStore.Items["device2"])
-		assert.Equal(t, 30.5, memoryStore.Data["device2"]["temperature"].(store.Measurement).Value)
+		assert.Equal(t, 30.5, memoryStore.Data["device2"]["temperature"].Value)
 	})
 
 	t.Run("POST /data/:measurement/:id/:field - invalid body", func(t *testing.T) {
