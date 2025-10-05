@@ -1,7 +1,30 @@
 package store
 
+import (
+	"log"
+	"os"
+	"stormaaja/go-ha/data-store/tools"
+)
+
 type MemoryStore struct {
-	Data map[string]map[string]Measurement
+	Data          map[string]map[string]Measurement
+	BackupEnabled bool
+}
+
+func (m *MemoryStore) LoadMemoryStore() error {
+	err := tools.ReadJsonFile("memory-store.json", &m.Data)
+	if err != nil {
+		if err != os.ErrNotExist {
+			log.Printf("Error loading memory store: %v", err)
+		} else {
+			log.Printf("Memory store file does not exist, starting with empty store")
+		}
+	}
+	return nil
+}
+
+func (m MemoryStore) SaveMemoryStore() error {
+	return tools.WriteJsonFile("memory-store.json", &m.Data)
 }
 
 func (m MemoryStore) GetMeasurement(
@@ -21,6 +44,12 @@ func (m *MemoryStore) SetMeasurement(
 		m.Data[key] = make(map[string]Measurement)
 	}
 	m.Data[key][measurementType] = measurement
+	if m.BackupEnabled {
+		err := m.SaveMemoryStore()
+		if err != nil {
+			log.Printf("Failed to backup memory store: %v", err)
+		}
+	}
 }
 
 func (m MemoryStore) FindMeasurements(
