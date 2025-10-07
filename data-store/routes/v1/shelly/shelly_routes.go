@@ -6,6 +6,7 @@ import (
 	"net/http"
 	"stormaaja/go-ha/data-store/store"
 	"strconv"
+	"time"
 
 	"github.com/gin-gonic/gin"
 )
@@ -31,6 +32,7 @@ func StoreTemperature(
 		MeasurementType: valueType,
 		Field:           valueType,
 		Value:           value,
+		UpdatedAt:       time.Now(),
 	}
 
 	memoryStore.SetMeasurement(

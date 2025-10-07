@@ -7,6 +7,7 @@ import (
 	"stormaaja/go-ha/data-store/middleware"
 	"stormaaja/go-ha/data-store/store"
 	"stormaaja/go-ha/data-store/tools"
+	"time"
 
 	"github.com/gin-gonic/gin"
 )
@@ -16,64 +17,88 @@ func CreateGenericDataRoutes(
 	memoryStore *store.MemoryStore,
 	measurementStores []store.MeasurementStore,
 ) {
-	group := g.Group("/data/:measurement/:id/:field")
+	dataGroup := g.Group("/data")
 	{
-		group.Use(middleware.MeasurementTypeValidator())
-
-		group.GET("", func(c *gin.Context) {
-			measurementType := c.Param("measurement")
-			deviceId := c.Param("id")
-			field := c.Param("field")
-			measurement, success := memoryStore.GetMeasurement(measurementType, deviceId)
-			if !success {
-				c.AbortWithError(http.StatusBadRequest, fmt.Errorf("device or measurement type not found"))
+		dataGroup.GET("", func(c *gin.Context) {
+			queryParams := c.Request.URL.Query()
+			if len(queryParams) == 0 {
+				c.AbortWithError(http.StatusBadRequest, fmt.Errorf("missing query parameters"))
 				return
 			}
-			var valueString string = ""
-			switch field {
-			case "temperature", "energy":
-				valueString = fmt.Sprintf("%f", measurement.Value.(float64))
-			default:
-				c.AbortWithError(http.StatusBadRequest, fmt.Errorf("field not found"))
-				return
+			findParams := make(map[string]string)
+			for key, values := range queryParams {
+				if len(values) > 0 {
+					findParams[key] = values[0]
+				}
 			}
-			c.String(http.StatusOK, valueString)
+			measurements := memoryStore.FindMeasurements(findParams)
+			c.JSON(http.StatusOK, measurements)
 		})
+		group := dataGroup.Group("/:measurement/:id/:field")
+		{
+			group.Use(middleware.MeasurementTypeValidator())
 
-		group.POST("", middleware.TokenCheck(), func(c *gin.Context) {
-			measurementType := c.Param("measurement")
-			deviceId := c.Param("id")
-			field := c.Param("field")
-			value, error := tools.ReadBodyFloat(&c.Request.Body)
+			group.GET("", func(c *gin.Context) {
+				measurementType := c.Param("measurement")
+				deviceId := c.Param("id")
+				field := c.Param("field")
+				measurement, success := memoryStore.GetMeasurement(measurementType, deviceId)
+				if !success {
+					c.AbortWithError(http.StatusBadRequest, fmt.Errorf("device or measurement type not found"))
+					return
+				}
+				if c.Query("format") == "full" {
+					c.JSON(http.StatusOK, measurement)
+				} else {
+					var valueString string = ""
+					switch field {
+					case "temperature", "energy":
+						valueString = fmt.Sprintf("%f", measurement.Value.(float64))
+					default:
+						c.AbortWithError(http.StatusBadRequest, fmt.Errorf("field not found"))
+						return
+					}
+					c.String(http.StatusOK, valueString)
+				}
+			})
 
-			if error != nil {
-				c.AbortWithError(http.StatusBadRequest, fmt.Errorf("invalid body"))
-				return
-			}
+			group.POST("", middleware.TokenCheck(), func(c *gin.Context) {
+				measurementType := c.Param("measurement")
+				deviceId := c.Param("id")
+				field := c.Param("field")
+				value, error := tools.ReadBodyFloat(&c.Request.Body)
 
-			measurement := store.Measurement{
-				DeviceId:        deviceId,
-				MeasurementType: measurementType,
-				Field:           field,
-				Value:           value,
-			}
+				if error != nil {
+					c.AbortWithError(http.StatusBadRequest, fmt.Errorf("invalid body"))
+					return
+				}
 
-			memoryStore.SetMeasurement(
-				measurementType,
-				deviceId,
-				measurement,
-			)
+				measurement := store.Measurement{
+					DeviceId:        deviceId,
+					MeasurementType: measurementType,
+					Field:           field,
+					Value:           value,
+					UpdatedAt:       time.Now(),
+				}
 
-			for _, measurementStore := range measurementStores {
-				log.Printf("Storing value %f for device %s", measurement.Value, measurement.DeviceId)
-				measurementStore.AppendItem(
+				memoryStore.SetMeasurement(
 					measurementType,
 					deviceId,
-					field,
-					value,
+					measurement,
 				)
-			}
-			c.Status(http.StatusCreated)
-		})
+
+				for _, measurementStore := range measurementStores {
+					log.Printf("Storing value %f for device %s", measurement.Value, measurement.DeviceId)
+					measurementStore.AppendItem(
+						measurementType,
+						deviceId,
+						field,
+						value,
+					)
+				}
+				c.Status(http.StatusCreated)
+			})
+		}
 	}
+
 }
