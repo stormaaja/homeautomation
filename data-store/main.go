@@ -206,7 +206,11 @@ func main() {
 	}
 	var influxDbClient = store.NewInfluxDBClient()
 	var memoryStore = store.MemoryStore{
-		Data: make(map[string]map[string]any),
+		Data:          make(map[string]map[string]store.Measurement),
+		BackupEnabled: os.Getenv("ENVIRONMENT") == "production",
+	}
+	if memoryStore.BackupEnabled {
+		memoryStore.LoadMemoryStore()
 	}
 	var measurementStores = []store.MeasurementStore{}
 	if influxDbClient != nil {

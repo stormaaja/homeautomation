@@ -14,7 +14,7 @@ func TestReportValues_Success(t *testing.T) {
 	gin.SetMode(gin.TestMode)
 	router := gin.New()
 	memoryStore := store.MemoryStore{
-		Data: make(map[string]map[string]any),
+		Data: make(map[string]map[string]store.Measurement),
 	}
 	measurementStore := store.MockMeasurementStore{
 		Items: make(map[string]float64),
@@ -25,7 +25,7 @@ func TestReportValues_Success(t *testing.T) {
 	req, _ := http.NewRequest("GET", "/v1/shelly/ht/test-device/report-values?temp=23.5", nil)
 	w := httptest.NewRecorder()
 	router.ServeHTTP(w, req)
-	measurement := memoryStore.Data["test-device"]["temperature"].(store.Measurement)
+	measurement := memoryStore.Data["test-device"]["temperature"]
 	assert.Equal(t, http.StatusCreated, w.Code)
 	assert.Equal(t, "test-device", measurement.DeviceId)
 	assert.Equal(t, 23.5, measurement.Value)
@@ -35,7 +35,7 @@ func TestReportValues_MissingTemperature(t *testing.T) {
 	gin.SetMode(gin.TestMode)
 	router := gin.New()
 	memoryStore := store.MemoryStore{
-		Data: make(map[string]map[string]any),
+		Data: make(map[string]map[string]store.Measurement),
 	}
 	measurementStore := store.MockMeasurementStore{
 		Items: make(map[string]float64),
@@ -55,7 +55,7 @@ func TestReportValues_InvalidTemperature(t *testing.T) {
 	gin.SetMode(gin.TestMode)
 	router := gin.New()
 	memoryStore := store.MemoryStore{
-		Data: make(map[string]map[string]any),
+		Data: make(map[string]map[string]store.Measurement),
 	}
 	measurementStore := store.MockMeasurementStore{
 		Items: make(map[string]float64),
