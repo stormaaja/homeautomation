@@ -19,7 +19,7 @@ jobs:
     - name: Set up Go
       uses: actions/setup-go@v6
       with:
-        go-version: '1.21.6'
+        go-version: '1.24.8'
 
     - name: Build Data Store
       working-directory: ./data-store
