@@ -10,7 +10,7 @@ import (
 	"time"
 )
 
-var url = "https://api.spot-hinta.fi/TodayAndDayForward?priceResolution=60"
+var url = "https://api.spot-hinta.fi/TodayAndDayForward?priceResolution=15"
 
 type SpotPrice struct {
 	Rank           int
