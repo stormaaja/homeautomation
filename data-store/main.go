@@ -4,8 +4,6 @@ import (
 	"fmt"
 	"log"
 	"os"
-	"os/exec"
-	"stormaaja/go-ha/data-store/configuration"
 	"stormaaja/go-ha/data-store/configvalidators"
 	"stormaaja/go-ha/data-store/dataroutes"
 	"stormaaja/go-ha/data-store/genericroutes"
@@ -45,8 +43,6 @@ func CreateRoutes(
 	memoryStore *store.MemoryStore,
 	measurementStores []store.MeasurementStore,
 	spotPriceApiClient *spot.SpotHintaApiClient,
-	minerStateStore *store.MinerStateStore,
-	minerConfigurationStore *store.GenericStore,
 ) *gin.Engine {
 	allowedProxies := os.Getenv("ALLOWED_PROXIES")
 	gin.SetMode(GetGinEnvironment())
@@ -66,8 +62,6 @@ func CreateRoutes(
 
 	v1.CreateV1Routes(
 		r,
-		minerConfigurationStore,
-		minerStateStore,
 		memoryStore,
 		measurementStores,
 	)
@@ -84,94 +78,6 @@ func PollCurrentPrice(
 		if spotPrice != nil && spotPrice.DateTime != currentSpotPrice.DateTime {
 			currentSpotPrice = *spotPrice
 			spotPriceChan <- *spotPrice
-		}
-		time.Sleep(time.Minute)
-	}
-}
-
-func WakeMiner(macAddress string) {
-	log.Printf("Waking miner with MAC address %s", macAddress)
-	err := exec.Command("wakeonlan", macAddress).Run()
-	if err != nil {
-		log.Printf("Failed to wake miner with MAC address %s: %v", macAddress, err)
-	} else {
-		log.Printf("Successfully sent WOL packet to miner with MAC address %s", macAddress)
-	}
-}
-
-func UpdateMinerStates(
-	minerStateStore *store.MinerStateStore,
-	spotPriceChan chan spot.SpotPrice,
-	localConfig *configuration.LocalConfig,
-) {
-	for {
-		currentSpotPrice := <-spotPriceChan
-		isMining := currentSpotPrice.PriceNoTax < localConfig.MaxSpotPriceForMining
-		log.Printf("Current spot price: %f, mining: %t", currentSpotPrice.PriceNoTax, isMining)
-
-		for _, minerId := range minerStateStore.GetIds() {
-			minerState, err := minerStateStore.GetValue(minerId)
-			if err != nil {
-				log.Printf("Error getting miner state: %v", err)
-				continue
-			}
-
-			localMinerConfig := localConfig.GetMinerConfig(minerId)
-			if isMining && localMinerConfig != nil && localMinerConfig.WakeOnLan && localMinerConfig.MacAddress != "" {
-				WakeMiner(localMinerConfig.MacAddress)
-			}
-
-			minerState.SpotPriceLimit = localConfig.MaxSpotPriceForMining
-			minerState.TemperatureLimit = localConfig.MaxTemperatureForMining
-			minerStateStore.SetValue(minerId, minerState)
-		}
-	}
-}
-
-func SetMinerStates(localConfig *configuration.LocalConfig, minerStateStore *store.MinerStateStore) {
-	minerStateStore.Clear()
-	for _, minerLocalConfig := range localConfig.Miners {
-		minerState := store.MinerState{
-			DeviceId:         minerLocalConfig.MinerId,
-			SpotPriceLimit:   localConfig.MaxSpotPriceForMining,
-			TemperatureLimit: localConfig.MaxTemperatureForMining,
-		}
-		minerStateStore.SetValue(minerLocalConfig.MinerId, minerState)
-	}
-}
-
-func PollConfigChanges(localConfig *configuration.LocalConfig, minerStateStore *store.MinerStateStore) {
-	for {
-		changed := localConfig.ReloadIfNeeded()
-		if changed {
-			log.Println("Local config changed, updating miner states")
-			SetMinerStates(localConfig, minerStateStore)
-		}
-
-		time.Sleep(time.Minute)
-	}
-}
-
-func PollXmrigConfigChanges(
-	minerStateStore *store.MinerStateStore,
-) {
-	for {
-		minerIds := minerStateStore.GetIds()
-		for _, minerId := range minerIds {
-			stat, err := os.Stat(fmt.Sprintf("xmrig-configs/%s/config.json", minerId))
-			if err != nil {
-				continue
-			}
-			minerState, err := minerStateStore.GetValue(minerId)
-			if err != nil {
-				log.Printf("Error getting miner state: %v", err)
-				continue
-			}
-			if minerState.LastConfigChanged != stat.ModTime() {
-				minerState.LastConfigChanged = stat.ModTime()
-				minerStateStore.SetValue(minerId, minerState)
-				log.Printf("Updated config change time for miner %s", minerId)
-			}
 		}
 		time.Sleep(time.Minute)
 	}
@@ -217,27 +123,14 @@ func main() {
 		measurementStores = append(measurementStores, influxDbClient)
 	}
 
-	minerStateStore := store.CreateMinerStateStore()
-
 	spotPriceApiClient := spot.CreateSpotHintaApiClient()
-	spotPriceChan := make(chan spot.SpotPrice, 1)
-	localConfig := configuration.CreateLocalConfig()
-	SetMinerStates(&localConfig, &minerStateStore)
 
 	go spotPriceApiClient.PollPrices()
-	go PollCurrentPrice(&spotPriceApiClient, spotPriceChan)
-	go UpdateMinerStates(&minerStateStore, spotPriceChan, &localConfig)
-	go PollConfigChanges(&localConfig, &minerStateStore)
-	go PollXmrigConfigChanges(&minerStateStore)
-
-	minerConfigurationStore := store.CreateGenericStore("miners_config.json")
 
 	r := CreateRoutes(
 		&memoryStore,
 		measurementStores,
 		&spotPriceApiClient,
-		&minerStateStore,
-		&minerConfigurationStore,
 	)
 
 	port := os.Getenv("PORT")
