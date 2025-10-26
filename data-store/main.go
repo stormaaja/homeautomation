@@ -7,6 +7,7 @@ import (
 	"stormaaja/go-ha/data-store/configvalidators"
 	"stormaaja/go-ha/data-store/dataroutes"
 	"stormaaja/go-ha/data-store/genericroutes"
+	"stormaaja/go-ha/data-store/mqttclient"
 	v1 "stormaaja/go-ha/data-store/routes/v1"
 	"stormaaja/go-ha/data-store/spot"
 
@@ -126,6 +127,8 @@ func main() {
 	spotPriceApiClient := spot.CreateSpotHintaApiClient()
 
 	go spotPriceApiClient.PollPrices()
+
+	mqttclient.Subscribe(os.Getenv("MQTT_BROKER"), &memoryStore)
 
 	r := CreateRoutes(
 		&memoryStore,
