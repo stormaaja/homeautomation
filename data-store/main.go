@@ -128,7 +128,7 @@ func main() {
 
 	go spotPriceApiClient.PollPrices()
 
-	mqttclient.Subscribe(os.Getenv("MQTT_BROKER"), &memoryStore)
+	mqttclient.Subscribe(os.Getenv("MQTT_CLIENT_ID"), os.Getenv("MQTT_BROKER"), os.Getenv("MQTT_TOPIC"), &memoryStore)
 
 	r := CreateRoutes(
 		&memoryStore,
