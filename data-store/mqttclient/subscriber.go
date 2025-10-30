@@ -2,7 +2,6 @@ package mqttclient
 
 import (
 	"context"
-	"encoding/json"
 	"log"
 	"os"
 	"os/signal"
@@ -16,25 +15,13 @@ import (
 	mqtt "github.com/eclipse/paho.mqtt.golang"
 )
 
-const (
-	clientID         = "data-store"
-	measurementTopic = "measurements"
-	temperatureTopic = "temperatures"
-)
-
 var mqttMsgChan = make(chan mqtt.Message)
 
 var messagePubHandler mqtt.MessageHandler = func(client mqtt.Client, msg mqtt.Message) {
 	mqttMsgChan <- msg
 }
 
-type MqttMessage struct {
-	MeasurementType string
-	MeasurmentKey   string
-	Measurement     store.Measurement
-}
-
-func processMsg(ctx context.Context, input <-chan mqtt.Message, memoryStore *store.MemoryStore) chan mqtt.Message {
+func processMsg(ctx context.Context, input <-chan mqtt.Message, topic string, memoryStore *store.MemoryStore) chan mqtt.Message {
 	out := make(chan mqtt.Message)
 	go func() {
 		defer close(out)
@@ -45,15 +32,7 @@ func processMsg(ctx context.Context, input <-chan mqtt.Message, memoryStore *sto
 					return
 				}
 				log.Printf("Received message: %s from topic: %s\n", msg.Payload(), msg.Topic())
-				if msg.Topic() == measurementTopic {
-					mqttMessage := MqttMessage{}
-					err := json.Unmarshal(msg.Payload(), &mqttMessage)
-					if err != nil {
-						log.Printf("Error parsing MQTT message: %v\n", err)
-					} else {
-						memoryStore.SetMeasurement(mqttMessage.MeasurementType, mqttMessage.MeasurmentKey, mqttMessage.Measurement)
-					}
-				} else if msg.Topic() == temperatureTopic {
+				if msg.Topic() == topic {
 					payload := string(msg.Payload())
 					splitted := strings.Split(payload, ":")
 					if len(splitted) != 2 {
@@ -92,10 +71,10 @@ var connectLostHandler mqtt.ConnectionLostHandler = func(client mqtt.Client, err
 	log.Printf("Connection lost: %v", err)
 }
 
-func Subscribe(broker string, memoryStore *store.MemoryStore) {
+func Subscribe(clientId string, broker string, topic string, memoryStore *store.MemoryStore) {
 	opts := mqtt.NewClientOptions()
 	opts.AddBroker(broker)
-	opts.SetClientID(clientID)
+	opts.SetClientID(clientId)
 	opts.SetDefaultPublishHandler(messagePubHandler)
 	opts.OnConnect = connectHandler
 	opts.OnConnectionLost = connectLostHandler
@@ -110,15 +89,15 @@ func Subscribe(broker string, memoryStore *store.MemoryStore) {
 	wg.Add(1)
 	go func() {
 		defer wg.Done()
-		finalChan := processMsg(ctx, mqttMsgChan, memoryStore)
+		finalChan := processMsg(ctx, mqttMsgChan, topic, memoryStore)
 		for range finalChan {
 			// just consuming these for now
 		}
 	}()
 
-	token := client.Subscribe(temperatureTopic, 1, nil)
+	token := client.Subscribe(topic, 1, nil)
 	token.Wait()
-	log.Printf("Subscribed to topic: %s\n", temperatureTopic)
+	log.Printf("Subscribed to topic: %s\n", topic)
 
 	sigChan := make(chan os.Signal, 1)
 	signal.Notify(sigChan, os.Interrupt, syscall.SIGTERM)
@@ -127,7 +106,7 @@ func Subscribe(broker string, memoryStore *store.MemoryStore) {
 	cancel()
 
 	log.Println("Unsubscribing and disconnecting...")
-	client.Unsubscribe(temperatureTopic)
+	client.Unsubscribe(topic)
 	client.Disconnect(250)
 
 	wg.Wait()
