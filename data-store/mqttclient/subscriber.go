@@ -7,15 +7,19 @@ import (
 	"os"
 	"os/signal"
 	"stormaaja/go-ha/data-store/store"
+	"strconv"
+	"strings"
 	"sync"
 	"syscall"
+	"time"
 
 	mqtt "github.com/eclipse/paho.mqtt.golang"
 )
 
 const (
-	clientID = "data-store"
-	topic    = "measurements"
+	clientID         = "data-store"
+	measurementTopic = "measurements"
+	temperatureTopic = "temperatures"
 )
 
 var mqttMsgChan = make(chan mqtt.Message)
@@ -41,13 +45,34 @@ func processMsg(ctx context.Context, input <-chan mqtt.Message, memoryStore *sto
 					return
 				}
 				log.Printf("Received message: %s from topic: %s\n", msg.Payload(), msg.Topic())
-				if msg.Topic() == topic {
+				if msg.Topic() == measurementTopic {
 					mqttMessage := MqttMessage{}
 					err := json.Unmarshal(msg.Payload(), &mqttMessage)
 					if err != nil {
-						log.Printf("Error parsing MQTT message: %v", err)
+						log.Printf("Error parsing MQTT message: %v\n", err)
 					} else {
 						memoryStore.SetMeasurement(mqttMessage.MeasurementType, mqttMessage.MeasurmentKey, mqttMessage.Measurement)
+					}
+				} else if msg.Topic() == temperatureTopic {
+					payload := string(msg.Payload())
+					splitted := strings.Split(payload, ":")
+					if len(splitted) != 2 {
+						log.Printf("Invalid temperature payload: %s\n", payload)
+					} else {
+						clientId := strings.TrimSpace(splitted[0])
+						value, err := strconv.ParseFloat(strings.TrimSpace(splitted[1]), 64)
+						if err != nil {
+							log.Printf("Parsing temperature from MQTT payload failed: %v\n", err)
+						} else {
+							measurement := store.Measurement{
+								DeviceId:        clientId,
+								MeasurementType: "temperature",
+								Field:           "temperature",
+								Value:           value,
+								UpdatedAt:       time.Now(),
+							}
+							memoryStore.SetMeasurement("temperature", clientId, measurement)
+						}
 					}
 				}
 				out <- msg
@@ -91,9 +116,9 @@ func Subscribe(broker string, memoryStore *store.MemoryStore) {
 		}
 	}()
 
-	token := client.Subscribe(topic, 1, nil)
+	token := client.Subscribe(temperatureTopic, 1, nil)
 	token.Wait()
-	log.Printf("Subscribed to topic: %s\n", topic)
+	log.Printf("Subscribed to topic: %s\n", temperatureTopic)
 
 	sigChan := make(chan os.Signal, 1)
 	signal.Notify(sigChan, os.Interrupt, syscall.SIGTERM)
@@ -102,7 +127,7 @@ func Subscribe(broker string, memoryStore *store.MemoryStore) {
 	cancel()
 
 	log.Println("Unsubscribing and disconnecting...")
-	client.Unsubscribe(topic)
+	client.Unsubscribe(temperatureTopic)
 	client.Disconnect(250)
 
 	wg.Wait()
